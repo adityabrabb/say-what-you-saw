@@ -1,7 +1,7 @@
 import type { Scene, Video } from "./scene";
 
 // Client-side helper for the /api/generate route.
-export async function requestScenes(description: string, mode: "recall" | "studio"): Promise<Scene[]> {
+export async function requestScenes(description: string, mode: "recall" | "studio"): Promise<Scene[] & { engine?: string }> {
   const res = await fetch("/api/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -9,7 +9,7 @@ export async function requestScenes(description: string, mode: "recall" | "studi
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
-  return data.scenes as Scene[];
+  return Object.assign(data.scenes as Scene[], { engine: data.engine as string | undefined });
 }
 
 export interface EditResult {
@@ -17,6 +17,7 @@ export interface EditResult {
   changes: string[];
   scenes: number[];
   summary: string;
+  engine?: string;
 }
 
 // Client-side helper for the /api/edit route.

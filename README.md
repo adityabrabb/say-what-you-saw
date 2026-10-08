@@ -67,7 +67,8 @@ Objects you didn't mention count as zero in every category, so "a red circle" on
 
 Scenes are JSON, and both the hand-made targets and the AI-generated ones use the same features:
 
-- **Shapes and icons:** circles, rectangles, stars, text and arrows, plus **184 illustrated Fluent Emoji icons** (animals, vehicles, food, weather, planets, buildings, objects…).
+- **Shapes and icons:** circles, rectangles, stars, text and arrows, plus **184 neon line icons** (animals, vehicles, food, weather, planets, buildings, objects…). They come from Tabler, Lucide and Game Icons, compiled into one SVG sprite and drawn as glowing neon tubes (soft glow, colour stroke, hot core) in the arcade palette.
+- **Hand-drawn art:** detailed gradient-shaded illustrations for hero objects: sun with a spinning corona, Earth with drifting continents and a night side, cratered moon, ringed planet, eclipse shadow cone, layered clouds, rain cloud, snow-capped mountain, sea, rocket, flickering flame, billowing smoke, launch gantry, water drop and rising vapour. Used by the Studio showcases (solar eclipse, water cycle, rocket launch) and available to the generator.
 - **Backdrops:** deep space with twinkling stars, a daytime sky with drifting clouds, a sunset ocean with rolling waves, a night city with lit windows, and a neon synthwave grid.
 - **Weather particles:** sparkle, rain, snow.
 - **Motion:** move, fade, grow and orbit with easing (`back`, `bounce`, `elastic`…), motion trails on anything that moves, staggered pop-in entrances, and a slow camera zoom and pan with parallax.
@@ -85,7 +86,8 @@ Scenes are JSON, and both the hand-made targets and the AI-generated ones use th
 - **three.js** for the low-poly neon moon on the landing screen (loaded lazily, paused off-screen)
 - **Motion** for the countdown and score animations, **canvas-confetti** for celebrations
 - **Web Audio API** for every sound effect. All synthesised in the browser, no audio files.
-- **Fluent Emoji** icons (MIT, Microsoft) via Iconify, extracted to static SVGs by `scripts/build-icons.mjs`
+- **Tabler**, **Lucide** and **Game Icons** via Iconify, compiled into a neon sprite by `scripts/build-icons.mjs`
+- **AI fallback chain:** OpenRouter (your model), then Google Gemini and Groq free tiers if their keys are set, then OpenRouter's free models, and finally an **offline keyword engine** that builds scenes and applies common voice edits with no AI at all, so the app never just breaks
 - Deployed on **Vercel**
 
 ```
@@ -115,7 +117,13 @@ OPENROUTER_API_KEY=sk-or-v1-your-key-here
 
 # Optional: use a different OpenRouter model
 # OPENROUTER_MODEL=google/gemini-2.5-flash
+
+# Optional free-tier fallbacks, tried if OpenRouter fails or runs out of credits
+# GEMINI_API_KEY=...   (aistudio.google.com/apikey)
+# GROQ_API_KEY=...     (console.groq.com/keys)
 ```
+
+If every AI provider is unavailable, the app switches to its offline engine and marks the result **OFFLINE BUILD**.
 
 `.env.local` is git-ignored, so your key never gets committed. There's a template in [`.env.example`](.env.example).
 

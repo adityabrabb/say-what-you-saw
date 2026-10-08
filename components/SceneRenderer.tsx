@@ -2,7 +2,9 @@ import { memo, useId, useMemo } from "react";
 import { SceneBackground, SceneParticles } from "./SceneBackground";
 import { cameraAt, computeFrame, type FrameObject } from "@/lib/engine";
 import { normalise, parseColour, shade } from "@/lib/colour";
-import { ICON_GROUPS, iconUrl } from "@/lib/icons";
+import { ArtPiece } from "./Art";
+import { ART_COLOURS, isArtName } from "@/lib/art";
+import { ICON_COLOURS, ICON_GROUPS, iconHref } from "@/lib/icons";
 import { STAGE_H, STAGE_W, type Scene, type SceneObject } from "@/lib/scene";
 
 // Rendering budget: only objects, trails and the camera change per frame. Backgrounds,
@@ -10,7 +12,7 @@ import { STAGE_H, STAGE_W, type Scene, type SceneObject } from "@/lib/scene";
 
 const DARK_BACKDROPS = new Set(["space", "grid", "city"]);
 const LIGHT_BACKDROPS = new Set(["sky", "ocean"]);
-const SOLID = new Set(["circle", "rect", "star", "icon"]);
+const SOLID = new Set(["circle", "rect", "star", "icon", "art"]);
 const TRAIL_STEPS = 5;
 const TRAIL_GAP = 0.05; // seconds between ghosts
 
@@ -32,6 +34,8 @@ function radiusOf(o: FrameObject): number {
       return (Math.max(o.w ?? 60, o.h ?? 40) / 2) * o.scale;
     case "icon":
       return ((o.w ?? 80) / 2) * o.scale;
+    case "art":
+      return (Math.max(o.w ?? 120, o.h ?? o.w ?? 120) / 2) * 0.8 * o.scale;
     case "text":
       return (o.fontSize ?? 16) * Math.max(1, (o.text ?? "").length) * 0.32 * o.scale;
     case "arrow":
@@ -59,7 +63,7 @@ const ObjectDefs = memo(function ObjectDefs({ objects, p }: { objects: SceneObje
         <stop offset="100%" stopColor="#000" stopOpacity="0" />
       </radialGradient>
       {objects.map((o) => {
-        const base = normalise(isSolidFill(o) ? o.fill : o.stroke, o.type === "icon" ? "#fff3c4" : "#cccccc");
+        const base = normalise(isSolidFill(o) ? o.fill : o.stroke, pictureColour(o));
         const shaded = isSolidFill(o) && (o.type === "circle" || o.type === "rect" || o.type === "star");
         return (
           <g key={o.id}>
@@ -94,12 +98,19 @@ function isDark(c: string | undefined): boolean {
   return !!rgb && 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2] < 110;
 }
 
+// Neon colour of an icon (scene "fill" overrides the icon's default) or an art piece's main colour.
+function pictureColour(o: SceneObject): string {
+  if (o.type === "icon") return normalise(isSolidFill(o) ? o.fill : undefined, ICON_COLOURS[o.icon ?? ""] ?? "#00F0FF");
+  if (o.type === "art") return isArtName(o.art) ? ART_COLOURS[o.art] : "#cccccc";
+  return "#cccccc";
+}
+
 function shapeFill(o: FrameObject, p: string) {
   return isSolidFill(o) ? `url(#${p}f-${o.id})` : "none";
 }
 
 // Draw one object. `ghost` draws a simplified copy for motion trails.
-function drawObject(o: FrameObject, p: string, ghost = false, key = o.id) {
+function drawObject(o: FrameObject, p: string, ghost = false, key = o.id, onLight = false) {
   const stroke = o.stroke && o.stroke !== "none" ? o.stroke : undefined;
   const common = {
     opacity: o.opacity,
@@ -123,7 +134,29 @@ function drawObject(o: FrameObject, p: string, ghost = false, key = o.id) {
       const s = o.w ?? 80;
       if (!o.icon || !(o.icon in ICON_GROUPS))
         return <circle key={key} cx={o.x} cy={o.y} r={s / 2.4} fill="#9ba1a6" opacity={o.opacity} transform={transform} />;
-      return <image key={key} href={iconUrl(o.icon)} x={o.x - s / 2} y={o.y - s / 2} width={s} height={s} opacity={o.opacity} transform={transform} />;
+      // Neon tube: wide soft glow, the coloured stroke, then a hot white-ish core. No blur filters.
+      const colour = pictureColour(o);
+      const sw = Math.min(2.4, Math.max(0.9, (3.2 * 24) / s)); // ~3px on stage whatever the size
+      const box = { href: iconHref(o.icon), x: o.x - s / 2, y: o.y - s / 2, width: s, height: s };
+      const width = (w: number) => ({ "--sw": w }) as React.CSSProperties;
+      return (
+        <g key={key} opacity={o.opacity} transform={transform}>
+          {!ghost && onLight && <use {...box} color="#14062e" style={width(sw * 2.6)} opacity={0.55} />}
+          {!ghost && <use {...box} color={colour} style={width(sw * 3.4)} opacity={0.22} />}
+          <use {...box} color={colour} style={width(sw)} />
+          {!ghost && <use {...box} color={shade(colour, 0.75)} style={width(sw * 0.38)} opacity={0.9} />}
+        </g>
+      );
+    }
+    case "art": {
+      if (ghost || !isArtName(o.art)) return null;
+      const w = o.w ?? 120;
+      const h = o.h ?? w;
+      return (
+        <g key={key} opacity={o.opacity} transform={`translate(${o.x} ${o.y}) scale(${(w / 100) * o.scale} ${(h / 100) * o.scale})`}>
+          <ArtPiece name={o.art} p={`${p}${o.id}-`} />
+        </g>
+      );
     }
     case "text":
       if (ghost) return null;
@@ -234,7 +267,7 @@ export default function SceneRenderer({
 
   // Ghost copies at slightly earlier times form the motion trail.
   const trails: React.ReactNode[] = [];
-  const trailIds = scene.objects.filter((o) => (o.trail ?? movers.has(o.id)) && o.type !== "text").map((o) => o.id);
+  const trailIds = scene.objects.filter((o) => (o.trail ?? movers.has(o.id)) && o.type !== "text" && o.type !== "art").map((o) => o.id);
   if (trailIds.length) {
     for (let k = TRAIL_STEPS; k >= 1; k--) {
       const t = time - k * TRAIL_GAP;
@@ -250,8 +283,10 @@ export default function SceneRenderer({
     }
   }
 
-  const halos = frame.filter((o) => o.glow || (glowAll && o.type !== "text")).map((o) => drawHalo(o, p));
-  const shadows = frame.filter((o) => (o.shadow ?? (shadowsOn && SOLID.has(o.type))) && !o.follow).map((o) => drawShadow(o, p));
+  const halos = frame.filter((o) => (o.glow || (glowAll && o.type !== "text")) && o.art !== "shadow-cone").map((o) => drawHalo(o, p));
+  const shadows = frame
+    .filter((o) => (o.shadow ?? (shadowsOn && SOLID.has(o.type) && !["shadow-cone", "sea", "smoke", "vapor", "cloud", "rain-cloud"].includes(o.art ?? ""))) && !o.follow)
+    .map((o) => drawShadow(o, p));
 
   // Three stacked layers so a moving object never forces the static backdrop to repaint.
   // The camera is a CSS transform on each layer (GPU-composited); the backdrop drifts less for parallax.
@@ -271,7 +306,7 @@ export default function SceneRenderer({
         {shadows}
         {trails}
         {halos}
-        {frame.map((o) => drawObject(o, p))}
+        {frame.map((o) => drawObject(o, p, false, o.id, shadowsOn))}
         {highlights.map((h) => {
           const o = byId.get(h.id);
           return o ? ring(o, h.colour) : null;

@@ -28,6 +28,7 @@ export default function Studio() {
   const [editing, setEditing] = useState(false);
   const [editError, setEditError] = useState("");
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [offline, setOffline] = useState(false);
 
   // Swap in a new video and remount the player so it replays from the given scene.
   const show = (next: Video, scene: number) => {
@@ -44,6 +45,7 @@ export default function Studio() {
     try {
       const scenes = await requestScenes(text, "studio");
       show({ title: text, scenes }, 0);
+      setOffline(scenes.engine === "offline");
       sfx.magic();
       setHistory([]); // edits belong to the previous video
     } catch (err) {
@@ -67,6 +69,7 @@ export default function Studio() {
       ]);
       setInstruction("");
       show(result.video, result.scenes[0] ?? currentScene);
+      setOffline(result.engine === "offline");
       sfx.magic();
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Edit failed");
@@ -114,6 +117,7 @@ export default function Studio() {
               onClick={() => {
                 show(v, 0);
                 setHistory([]);
+                setOffline(false);
               }}
             >
               <SceneRenderer scene={v.scenes[0]} time={v.scenes[0].duration * 0.75} still />
@@ -123,7 +127,10 @@ export default function Studio() {
         </div>
       </div>
 
-      <p className="muted now-playing">{video.title}</p>
+      <p className="muted now-playing">
+        {video.title}
+        {offline && <span className="offline-badge" title="Every AI provider was unavailable, so this was built by the offline keyword engine.">OFFLINE BUILD</span>}
+      </p>
       <div className="player-wrap">
         <Player key={version} video={video} startScene={startScene} onSceneChange={setCurrentScene} />
         {loading && (

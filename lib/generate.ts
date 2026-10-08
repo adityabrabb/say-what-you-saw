@@ -1,12 +1,15 @@
 import "server-only";
+import { ProviderSession, type Message } from "./providers";
+import { buildOfflineScene, guessBackdrop } from "./offline";
+import { BACKGROUNDS } from "./scene";
 import { z } from "zod";
+import { ART_NAMES } from "./art";
 import { ICON_NAMES } from "./icons";
 import { snapIcons } from "./iconMatch";
 import { SHOWCASES } from "./showcases";
 import { checkScene, clampToStage, scenesResponse } from "./schema";
 import type { Scene } from "./scene";
 
-const MODEL = process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash";
 const MAX_ATTEMPTS = 3;
 // Without an explicit cap OpenRouter reserves the model's full output limit, which needs far more credits.
 const MAX_TOKENS: Record<"recall" | "studio", number> = { recall: 3000, studio: 6000 };
@@ -23,10 +26,11 @@ Scene: {"id": string, "title": string, "duration": seconds, "background": preset
 
 Stage is 800 wide x 450 tall. (0,0) is top-left, y grows downward. Centre is (400,225).
 
-Object: {"id": unique string, "type": "circle"|"rect"|"star"|"text"|"arrow"|"icon", "x": number, "y": number, ...}
+Object: {"id": unique string, "type": "circle"|"rect"|"star"|"text"|"arrow"|"icon"|"art", "x": number, "y": number, ...}
 - x,y is the CENTRE of circle/rect/star/text/icon. For arrow, x,y is the tail and x2,y2 is the head.
 - circle/star: "r" radius. rect: "w","h". text: "text","fontSize". arrow: "x2","y2","stroke","strokeWidth".
-- icon: a colourful illustrated picture. "icon": one name from ICONS below, "w": size in px (40-200). Use icons for real-world things (animals, vehicles, food, weather, planets, buildings, objects); use circle/rect/star for plain geometric shapes.
+- icon: a glowing neon line icon. "icon": one name from ICONS below, "w": size in px (40-200), optional "fill" to recolour the neon. Use icons for real-world things (animals, vehicles, food, weather, buildings, objects); use circle/rect/star for plain geometric shapes.
+- art: a detailed hand-drawn illustration for hero objects. "art": one of ${ART_NAMES.join(", ")}; "w" (and optional "h") is its box in px (60-360). Prefer art over an icon for these things. "flame" points down (attach under a rocket with "follow"), "shadow-cone" is a wide shadow from left to right, "sea" is a strip of water (use a wide w and h around 120).
 - "fill": hex colour (or "none" for outlines with "stroke"). "opacity": 0-1 initial (use 0 for things that fade in). "scale": initial scale.
 - "follow": id of another object; then x,y are an OFFSET from that object (use for labels that ride along with a moving object).
 - "glow": true for suns/lights. Shapes are shaded with gradients automatically; moving objects get motion trails automatically.
@@ -49,7 +53,7 @@ Layout rules:
 const STUDIO_EXAMPLES = SHOWCASES.map((v) => JSON.stringify(v.scenes[0])).join("\n\n");
 
 const MODE_RULES: Record<GenerateMode, string> = {
-  recall: `This is a memory game. Recreate EXACTLY what the player describes, nothing more: same things, counts, colours, relative positions, sizes and motions. A named real thing ("a dog", "a rocket", "a palm tree") is an icon with the closest listed name; a plain shape ("a red circle") is a shape. Set "background" only if the player describes the setting (space, sky, sea, city at night, neon grid) and "particles" only if they mention rain, snow or sparkles. Do not add decorations, labels, camera or entrance effects the player didn't mention. Return exactly ONE scene with duration 5 and all objects visible (opacity 1) unless the player says something fades.`,
+  recall: `This is a memory game. Recreate EXACTLY what the player describes, nothing more: same things, counts, colours, relative positions, sizes and motions. A named real thing ("a dog", "a rocket", "a palm tree") is an icon with the closest listed name (never "art" in this mode); a plain shape ("a red circle") is a shape. Set "background" only if the player describes the setting (space, sky, sea, city at night, neon grid) and "particles" only if they mention rain, snow or sparkles. Do not add decorations, labels, camera or entrance effects the player didn't mention. Return exactly ONE scene with duration 5 and all objects visible (opacity 1) unless the player says something fades.`,
   studio: `Think like a motion designer making a short animated explainer. Break the explanation into 1-3 scenes, each 8-12 seconds.
 
 Every scene:
@@ -66,40 +70,7 @@ Three example scenes for style (don't copy their content):
 ${STUDIO_EXAMPLES}`,
 };
 
-export type Message = { role: "system" | "user" | "assistant"; content: string };
-
-async function callModel(messages: Message[], maxTokens: number): Promise<string> {
-  const key = process.env.OPENROUTER_API_KEY || process.env.api_openrouter_API_key;
-  if (!key) throw new Error("Missing OPENROUTER_API_KEY environment variable");
-
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-      "X-Title": "Say What You Saw",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages,
-      temperature: 0.3,
-      max_tokens: maxTokens,
-      response_format: { type: "json_object" },
-    }),
-  });
-  if (res.status === 402) {
-    // Low credit: OpenRouter says how many tokens we can still afford. Retry once within that.
-    const text = await res.text();
-    const affordable = Number(text.match(/can only afford (\d+)/)?.[1]);
-    if (affordable >= 1200 && affordable < maxTokens) return callModel(messages, affordable - 100);
-    throw new Error("Out of OpenRouter credits. Top up at openrouter.ai/settings/credits and try again.");
-  }
-  if (!res.ok) throw new Error(`OpenRouter ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  const data = await res.json();
-  const content = data?.choices?.[0]?.message?.content;
-  if (typeof content !== "string") throw new Error("OpenRouter returned no content");
-  return content;
-}
+export type { Message };
 
 // Pull the JSON object out even if the model wraps it in fences or chatter.
 function extractJson(text: string): unknown {
@@ -110,10 +81,15 @@ function extractJson(text: string): unknown {
 }
 
 // Call the model, run `accept` on the parsed JSON, and on failure retry with the error fed back.
-export async function askWithRetries<T>(messages: Message[], maxTokens: number, accept: (json: unknown) => T): Promise<T> {
+export async function askWithRetries<T>(
+  messages: Message[],
+  maxTokens: number,
+  accept: (json: unknown) => T,
+  session = new ProviderSession()
+): Promise<T> {
   let lastError = "";
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const reply = await callModel(messages, maxTokens);
+    const reply = await session.call(messages, maxTokens);
     try {
       return accept(extractJson(reply));
     } catch (err) {
@@ -129,8 +105,21 @@ Return the corrected full JSON only.` }
   throw new Error(`Model output failed validation after ${MAX_ATTEMPTS} attempts: ${lastError}`);
 }
 
-// Ask the model for scenes and validate them.
-export async function generateScenes(description: string, mode: GenerateMode): Promise<Scene[]> {
+export type Engine = string; // provider name, or "offline"
+
+// Ask the AI chain for scenes; if every provider fails, build the scene offline instead.
+export async function generateScenes(description: string, mode: GenerateMode): Promise<{ scenes: Scene[]; engine: Engine; note?: string }> {
+  const session = new ProviderSession();
+  try {
+    const scenes = await askAI(description, mode, session);
+    return { scenes, engine: session.used };
+  } catch (err) {
+    console.warn("AI generation failed, using offline builder:", (err as Error).message);
+    return { scenes: [buildOfflineScene(description, mode)], engine: "offline", note: (err as Error).message.slice(0, 200) };
+  }
+}
+
+async function askAI(description: string, mode: GenerateMode, session: ProviderSession): Promise<Scene[]> {
   const messages: Message[] = [
     { role: "system", content: `${SYSTEM_PROMPT}
 
@@ -144,6 +133,15 @@ ${MODE_RULES[mode]}` },
     const scenes = (parsed.data.scenes as Scene[]).map((sc) => snapIcons(sc).scene);
     const problems = scenes.flatMap(checkScene);
     if (problems.length) throw new Error(problems.join("; "));
-    return scenes.map(clampToStage);
-  });
+    // Studio scenes always get a fitting backdrop preset, even if the model chose a flat colour.
+    const dressed =
+      mode === "studio"
+        ? scenes.map((sc) =>
+            (BACKGROUNDS as readonly string[]).includes(sc.background ?? "")
+              ? sc
+              : { ...sc, background: guessBackdrop(`${description} ${sc.title} ${sc.caption ?? ""}`) ?? "sky" }
+          )
+        : scenes;
+    return dressed.map(clampToStage);
+  }, session);
 }

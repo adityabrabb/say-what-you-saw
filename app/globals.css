@@ -503,3 +503,31 @@ textarea:focus, .edit-input:focus {
   .showcases { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
   .showcase span { font-size: 12px; }
 }
+
+/* ---------- Hand-drawn art details (CSS only) ---------- */
+.art-pulse, .art-spin, .art-flicker, .art-puff, .art-bob { transform-box: fill-box; transform-origin: center; }
+.art-pulse { animation: art-pulse 3s ease-in-out infinite alternate; }
+@keyframes art-pulse { to { transform: scale(1.12); opacity: 0.8; } }
+.art-spin { animation: art-spin 40s linear infinite; }
+@keyframes art-spin { to { transform: rotate(360deg); } }
+.art-earth-spin { animation: art-earth-spin 22s linear infinite; }
+@keyframes art-earth-spin { to { transform: translateX(-68px); } }
+.art-bob { animation: art-bob 4s ease-in-out infinite alternate; }
+@keyframes art-bob { to { transform: translateY(-3px); } }
+.art-rain { animation: art-rain 0.7s linear infinite; }
+@keyframes art-rain { from { transform: translateY(-6px); opacity: 0; } 30% { opacity: 1; } to { transform: translateY(30px); opacity: 0; } }
+.art-flicker { transform-origin: 50% 0%; animation: art-flicker 0.14s ease-in-out infinite alternate; }
+@keyframes art-flicker { from { transform: scale(0.94, 0.9); opacity: 0.9; } to { transform: scale(1.05, 1.08); opacity: 1; } }
+.art-puff { animation: art-puff 2.7s ease-out infinite; }
+@keyframes art-puff { from { transform: scale(0.6); opacity: 0.95; } to { transform: scale(1.35) translateY(-6px); opacity: 0.15; } }
+.art-blink { animation: blink 1s steps(1) infinite; }
+.art-wave { animation: art-wave 3s linear infinite; }
+.art-wave.slow { animation-duration: 5s; animation-direction: reverse; }
+@keyframes art-wave { to { transform: translateX(40px); } }
+.art-rise { animation: art-rise 2.2s ease-out infinite; }
+@keyframes art-rise { from { transform: translateY(8px); opacity: 0; } 40% { opacity: 0.9; } to { transform: translateY(-14px); opacity: 0; } }
+.offline-badge {
+  margin-left: 10px; padding: 3px 7px; border-radius: 6px; vertical-align: middle;
+  font-family: var(--font-head); font-size: 8px; letter-spacing: 0.08em;
+  color: #1a1300; background: var(--yellow); box-shadow: 0 0 10px rgba(255, 230, 0, 0.5);
+}

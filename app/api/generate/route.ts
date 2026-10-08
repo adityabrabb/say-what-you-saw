@@ -17,8 +17,8 @@ export async function POST(req: Request) {
   if (description.length > 4000) return NextResponse.json({ error: "Description is too long" }, { status: 400 });
 
   try {
-    const scenes = await generateScenes(description, mode);
-    return NextResponse.json({ scenes });
+    const { scenes, engine } = await generateScenes(description, mode);
+    return NextResponse.json({ scenes, engine });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Generation failed";
     return NextResponse.json({ error: message }, { status: 502 });

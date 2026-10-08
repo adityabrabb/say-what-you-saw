@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ART_NAMES, isArtName } from "./art";
 import { ICON_GROUPS, ICON_NAMES } from "./icons";
 import { BACKGROUNDS, PARTICLES, STAGE_H, STAGE_W, type Scene } from "./scene";
 
@@ -7,7 +8,7 @@ export const point = z.object({ x: z.number(), y: z.number() });
 
 export const sceneObject = z.object({
   id: z.string().min(1),
-  type: z.enum(["circle", "rect", "star", "text", "arrow", "image", "icon"]),
+  type: z.enum(["circle", "rect", "star", "text", "arrow", "image", "icon", "art"]),
   x: z.number(),
   y: z.number(),
   r: z.number().positive().optional(),
@@ -23,6 +24,7 @@ export const sceneObject = z.object({
   shadow: z.boolean().optional(),
   trail: z.boolean().optional(),
   icon: z.string().optional(),
+  art: z.string().optional(),
   text: z.string().optional(),
   fontSize: z.number().positive().optional(),
   href: z.string().optional(),
@@ -80,6 +82,8 @@ export function checkScene(s: Scene): string[] {
       problems.push(`icon "${o.icon}" is not in the icon list${hint.length ? ` (did you mean ${hint.join(", ")}?)` : "; use a listed name or a shape instead"}`);
     }
   }
+  for (const o of s.objects)
+    if (o.type === "art" && !isArtName(o.art)) problems.push(`art "${o.art}" must be one of ${ART_NAMES.join(", ")}`);
   const bg = s.background;
   if (bg && !(BACKGROUNDS as readonly string[]).includes(bg) && !/^#[0-9a-fA-F]{3,6}$/.test(bg))
     problems.push(`background "${bg}" must be one of ${BACKGROUNDS.join(", ")} or a hex colour`);

@@ -18,8 +18,9 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@iconify-json/fluent-emoji": "^1.2.7",
-    "@iconify-json/fluent-emoji-flat": "^1.2.6",
+    "@iconify-json/game-icons": "^1.2.4",
+    "@iconify-json/lucide": "^1.2.141",
+    "@iconify-json/tabler": "^1.2.42",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^26.6.4",
     "@types/react": "^19.3.0",

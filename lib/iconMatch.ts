@@ -1,10 +1,11 @@
 import { ICON_GROUPS, ICON_NAMES } from "./icons";
+import { isArtName } from "./art";
 import type { Scene, SceneObject } from "./scene";
 
 // Snap whatever icon name the model invents to the closest whitelisted icon,
 // so "puppy" becomes "dog" and "space-shuttle" becomes "rocket" instead of failing validation.
 
-const SYNONYMS: Record<string, string> = {
+export const SYNONYMS: Record<string, string> = {
   puppy: "dog", doggy: "dog", hound: "dog", retriever: "dog", labrador: "dog", poodle: "dog", "rain-cloud": "rain", pinetree: "pine-tree", "christmas-tree": "pine-tree", wolf: "fox", kitten: "cat", kitty: "cat", tabby: "cat",
   bunny: "rabbit", hare: "rabbit", rat: "mouse", hamster: "mouse", pony: "horse", bull: "cow", calf: "cow",
   lamb: "sheep", hen: "chicken", rooster: "chicken", seagull: "bird", gull: "bird", sparrow: "bird", pigeon: "bird",
@@ -84,6 +85,11 @@ export function closestIcon(raw: string | undefined): string {
 export function snapIcons(scene: Scene): { scene: Scene; swaps: string[] } {
   const swaps: string[] = [];
   const objects = scene.objects.map((o): SceneObject => {
+    if (o.type === "art" && !isArtName(o.art)) {
+      const icon = closestIcon(o.art);
+      swaps.push(`art ${o.art} -> icon ${icon}`);
+      return { ...o, type: "icon", icon, art: undefined };
+    }
     if (o.type !== "icon" || (o.icon && o.icon in ICON_GROUPS)) return o;
     const icon = closestIcon(o.icon);
     swaps.push(`${o.icon} -> ${icon}`);

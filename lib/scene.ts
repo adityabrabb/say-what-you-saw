@@ -4,7 +4,7 @@
 export const STAGE_W = 800;
 export const STAGE_H = 450;
 
-export type ObjectType = "circle" | "rect" | "star" | "text" | "arrow" | "image" | "icon";
+export type ObjectType = "circle" | "rect" | "star" | "text" | "arrow" | "image" | "icon" | "art";
 
 export interface SceneObject {
   id: string;
@@ -27,6 +27,7 @@ export interface SceneObject {
   fontSize?: number;
   href?: string; // image source
   icon?: string; // icon name from lib/icons.ts
+  art?: string; // hand-drawn illustration name from lib/art.ts (w/h set its box)
   opacity?: number; // initial opacity, default 1
   scale?: number; // initial scale, default 1
   follow?: string; // id of another object; x/y become an offset from it (labels that ride along)

@@ -8,7 +8,7 @@ import { celebrate } from "@/lib/confetti";
 import { flash, shake } from "@/lib/fx";
 import { scoreSound, sfx } from "@/lib/sound";
 import { requestScenes } from "@/lib/api";
-import { iconUrl } from "@/lib/icons";
+import { ICON_SPRITE } from "@/lib/icons";
 import { DESCRIBE_SECONDS, DIFFICULTIES, poolFor, type Difficulty } from "@/lib/recallPool";
 import { CATEGORY_LABELS, describeObject, POINTS_PER_CATEGORY, scoreScenes, verdictFor, type Category, type ScoreResult } from "@/lib/score";
 import type { Scene } from "@/lib/scene";
@@ -21,6 +21,7 @@ interface RoundResult {
   generated: Scene | null;
   score: ScoreResult | null;
   error: string;
+  offline?: boolean;
 }
 
 const READY_SECONDS = 3.7; // 3, 2, 1, then a beat of "LOOK!"
@@ -40,7 +41,7 @@ function nextTarget(seen: Set<string>, difficulty: Difficulty): Scene {
   const pick = fresh[Math.floor(Math.random() * fresh.length)];
   seen.add(pick.id);
   // Warm the cache so icons are already there when the 2-second flash starts.
-  pick.objects.forEach((o) => o.type === "icon" && o.icon && (new Image().src = iconUrl(o.icon)));
+  if (pick.objects.some((o) => o.type === "icon")) new Image().src = ICON_SPRITE;
   return pick;
 }
 
@@ -252,7 +253,7 @@ export default function RecallGame() {
     const game = gameId.current;
     updateRound(game, index, { error: "", generated: null, score: null });
     requestScenes(text, "recall")
-      .then((scenes) => updateRound(game, index, { generated: scenes[0], score: scoreScenes(target, scenes[0]) }))
+      .then((scenes) => updateRound(game, index, { generated: scenes[0], score: scoreScenes(target, scenes[0]), offline: scenes.engine === "offline" }))
       .catch((err) => updateRound(game, index, { error: err.message }));
   };
 
@@ -488,7 +489,9 @@ export default function RecallGame() {
               )}
             </div>
             <div>
-              <p className="label">Your scene</p>
+              <p className="label">
+                Your scene{current.offline && <span className="offline-badge">OFFLINE BUILD</span>}
+              </p>
               {generated ? (
                 <SceneRenderer scene={generated} time={5} highlights={highlightsPlayer} />
               ) : (

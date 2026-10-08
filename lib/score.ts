@@ -88,9 +88,12 @@ function colourSimilarity(a: string, b: string): number {
 // ---------- Geometry ----------
 
 const SHAPES: ObjectType[] = ["circle", "rect", "star", "image"];
+const PICTURES: ObjectType[] = ["icon", "art"];
+const pictureName = (o: { icon?: string; art?: string }) => o.icon ?? o.art ?? "";
+const pictureGroup = (n: string) => ICON_GROUPS[n] ?? n;
 
 function canMatch(a: ObjectType, b: ObjectType): boolean {
-  return a === b || (SHAPES.includes(a) && SHAPES.includes(b));
+  return a === b || (SHAPES.includes(a) && SHAPES.includes(b)) || (PICTURES.includes(a) && PICTURES.includes(b));
 }
 
 function sizeOf(o: FrameObject): number {
@@ -106,6 +109,8 @@ function sizeOf(o: FrameObject): number {
       return (o.fontSize ?? 16) * s * Math.max(1, (o.text ?? "").length) * 0.6;
     case "icon":
       return (o.w ?? 80) * s;
+    case "art":
+      return Math.sqrt((o.w ?? 120) * (o.h ?? o.w ?? 120)) * s;
     case "arrow":
       return Math.hypot((o.x2 ?? o.x + 60) - o.x, (o.y2 ?? o.y) - o.y);
   }
@@ -178,15 +183,14 @@ export function scoreScenes(target: Scene, player: Scene): ScoreResult {
     for (const p of P) {
       if (!canMatch(t.type, p.type)) continue;
       // Icons have no fill colour; compare what they depict instead.
-      const colour =
-        t.type === "icon"
-          ? t.icon === p.icon
-            ? 1
-            : ICON_GROUPS[t.icon ?? ""] && ICON_GROUPS[t.icon ?? ""] === ICON_GROUPS[p.icon ?? ""]
-              ? 0.6
-              : 0
-          : colourSimilarity(tColour.get(t.id)!, pColour.get(p.id)!);
-      if (t.type !== p.type && colour < 1) continue;
+      const colour = PICTURES.includes(t.type)
+        ? pictureName(t) === pictureName(p)
+          ? 1
+          : pictureGroup(pictureName(t)) === pictureGroup(pictureName(p))
+            ? 0.6
+            : 0
+        : colourSimilarity(tColour.get(t.id)!, pColour.get(p.id)!);
+      if (t.type !== p.type && colour < 1) continue; // a different kind of thing must at least be the same name/colour
       candidates.push({ t, p, type: t.type === p.type ? 1 : 0, colour, dist: Math.hypot(t.x - p.x, t.y - p.y) });
     }
   candidates.sort((a, b) => b.type - a.type || b.colour - a.colour || a.dist - b.dist);
@@ -291,8 +295,8 @@ export function verdictFor(score: number, seed: number): string {
 }
 
 // Human name for an object, used to list misses on the reveal ("robot", "red circle", "text HELLO").
-export function describeObject(o: { type: string; icon?: string; fill?: string; stroke?: string; text?: string }): string {
-  if (o.type === "icon") return (o.icon ?? "thing").replace(/-/g, " ");
+export function describeObject(o: { type: string; icon?: string; art?: string; fill?: string; stroke?: string; text?: string }): string {
+  if (o.type === "icon" || o.type === "art") return (o.icon ?? o.art ?? "thing").replace(/-/g, " ");
   if (o.type === "text") return `“${o.text ?? ""}”`;
   const colour = colourName(o.fill && o.fill !== "none" ? o.fill : o.stroke);
   const shape = o.type === "rect" ? "square" : o.type;

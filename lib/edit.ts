@@ -1,7 +1,9 @@
 import "server-only";
 import { z } from "zod";
 import { askWithRetries, SYSTEM_PROMPT, type Message } from "./generate";
+import { offlineEditPatch } from "./offline";
 import { applyPatch, patchSchema } from "./patch";
+import { ProviderSession } from "./providers";
 import type { Video } from "./scene";
 
 const EDIT_RULES = `You are now EDITING an existing video. Do NOT rewrite it. Return a small patch:
@@ -36,10 +38,24 @@ export async function editVideo(video: Video, instruction: string, currentScene:
       content: `Current video JSON:\n${JSON.stringify(video)}\n\nThe user is viewing scene index ${currentScene}.\n\nInstruction: ${instruction}`,
     },
   ];
-  return askWithRetries(messages, MAX_TOKENS, (json) => {
-    const parsed = patchSchema.safeParse(json);
-    if (!parsed.success) throw new Error(z.prettifyError(parsed.error));
-    const result = applyPatch(video, parsed.data);
-    return { ...result, summary: parsed.data.summary, ops: parsed.data.ops };
-  });
+  const session = new ProviderSession();
+  try {
+    const result = await askWithRetries(
+      messages,
+      MAX_TOKENS,
+      (json) => {
+        const parsed = patchSchema.safeParse(json);
+        if (!parsed.success) throw new Error(z.prettifyError(parsed.error));
+        const applied = applyPatch(video, parsed.data);
+        return { ...applied, summary: parsed.data.summary, ops: parsed.data.ops };
+      },
+      session
+    );
+    return { ...result, engine: session.used };
+  } catch (err) {
+    // Every AI provider failed: handle the common edits with keyword rules instead.
+    console.warn("AI edit failed, trying offline rules:", (err as Error).message);
+    const patch = offlineEditPatch(video, instruction, currentScene);
+    return { ...applyPatch(video, patch), summary: patch.summary, ops: patch.ops, engine: "offline" };
+  }
 }
