@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import SceneRenderer from "./SceneRenderer";
 import { celebrate } from "@/lib/confetti";
+import { flash, shake } from "@/lib/fx";
 import { scoreSound, sfx } from "@/lib/sound";
 import { requestScenes } from "@/lib/api";
 import { DESCRIBE_SECONDS, DIFFICULTIES, recallPool, type Difficulty } from "@/lib/recallPool";
@@ -56,21 +57,36 @@ function writeBest(rounds: number, difficulty: Difficulty, score: number) {
   }
 }
 
-// Animate a number from 0 up to `value`.
-function useCountUp(value: number, ms = 1200): number {
-  const [shown, setShown] = useState(0);
+// Ease that shoots past the target and settles back: the number counts up, then down.
+const easeOutBack = (p: number) => 1 + 2.4 * Math.pow(p - 1, 3) + 1.4 * Math.pow(p - 1, 2);
+
+// Animate a number from wherever it currently shows to `value`, overshooting slightly.
+function useCountTo(value: number, ms = 1200, from = 0): number {
+  const [shown, setShown] = useState(from);
+  const shownRef = useRef(from);
   useEffect(() => {
+    const start = shownRef.current;
+    if (start === value) return;
     let raf = 0;
-    const start = performance.now();
+    const t0 = performance.now();
     const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / ms);
-      setShown(Math.round(value * (1 - Math.pow(1 - p, 3))));
+      const p = Math.min(1, (t - t0) / ms);
+      const v = Math.max(0, Math.round(start + (value - start) * easeOutBack(p)));
+      shownRef.current = v;
+      setShown(v);
       if (p < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [value, ms]);
   return shown;
+}
+
+const useCountUp = (value: number, ms = 1200) => useCountTo(value, ms, 0);
+
+// HUD total that rolls from the old total to the new one.
+function RollingNumber({ value }: { value: number }) {
+  return <>{useCountTo(value, 900, value)}</>;
 }
 
 function ScoreBreakdown({ score, seed }: { score: ScoreResult; seed: number }) {
@@ -81,12 +97,19 @@ function ScoreBreakdown({ score, seed }: { score: ScoreResult; seed: number }) {
     return () => cancelAnimationFrame(id);
   }, []);
   useEffect(() => {
-    if (total > 0 && total < score.total && total % 2 === 0) sfx.scoreTick();
-  }, [total, score.total]);
+    if (total > 0 && total % 2 === 0) sfx.scoreTick();
+  }, [total]);
+  // When the count lands: win jingle + green flash (+ confetti), or buzzer + red flash + shake.
   useEffect(() => {
     const id = setTimeout(() => {
       scoreSound(score.total);
-      if (score.total >= 80) celebrate(score.total >= 95);
+      if (score.total >= 50) {
+        flash("#39ff14", 0.28);
+        if (score.total >= 80) celebrate(score.total >= 95);
+      } else {
+        flash("#ff3355", 0.35);
+        shake(score.total < 25 ? 12 : 7);
+      }
     }, 1250);
     return () => clearTimeout(id);
   }, [score.total]);
@@ -137,12 +160,13 @@ function ScoreBreakdown({ score, seed }: { score: ScoreResult; seed: number }) {
 function FinalTotal({ total, celebrateIt }: { total: number; celebrateIt: boolean }) {
   const shown = useCountUp(total, 1600);
   useEffect(() => {
-    if (shown > 0 && shown < total && shown % 5 === 0) sfx.scoreTick();
+    if (shown > 0 && shown % 5 === 0) sfx.scoreTick();
   }, [shown, total]);
   useEffect(() => {
     const id = setTimeout(() => {
       if (celebrateIt) {
         sfx.great();
+        flash("#39ff14", 0.3);
         celebrate(true);
       } else sfx.good();
     }, 1650);
@@ -236,12 +260,25 @@ export default function RecallGame() {
   const beat =
     phase === "ready" ? (remaining > LOOK_BEAT ? Math.ceil(remaining - LOOK_BEAT) : 0) : phase === "describe" ? Math.ceil(remaining) : -1;
   useEffect(() => {
-    if (phase === "ready") beat > 0 ? sfx.count() : sfx.go();
-    else if (phase === "describe" && beat < DESCRIBE_SECONDS) beat <= 5 ? sfx.urgent() : sfx.tick();
+    if (phase === "ready") {
+      if (beat > 0) sfx.count();
+      else {
+        sfx.go();
+        flash("#ff2bd6", 0.25, 250);
+      }
+    } else if (phase === "describe" && beat < DESCRIBE_SECONDS) {
+      if (beat <= 5) {
+        sfx.urgent();
+        shake(3 + (5 - beat), 260);
+      } else sfx.tick();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [beat, phase]);
   useEffect(() => {
-    if (phase === "flash") sfx.flash();
+    if (phase === "flash") {
+      sfx.flash();
+      flash("#ffffff", 0.75, 450);
+    }
     if (phase === "result") sfx.submit();
   }, [phase]);
 
@@ -271,7 +308,7 @@ export default function RecallGame() {
       </span>
       <span>{DIFFICULTIES[difficulty].label}</span>
       <span>
-        Total <strong>{runningTotal}</strong>
+        Total <strong><RollingNumber value={runningTotal} /></strong>
       </span>
     </div>
   );
@@ -350,7 +387,7 @@ export default function RecallGame() {
     return (
       <>
         {hud}
-        <div className={secs <= 5 ? "recall-card shake" : "recall-card"}>
+        <div className={secs <= 5 ? "recall-card urgent-card" : "recall-card"}>
           <div className="describe-head">
             <h2>What did you see?</h2>
             <motion.div

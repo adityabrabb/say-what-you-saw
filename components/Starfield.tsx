@@ -17,7 +17,7 @@ export default function Starfield() {
     let raf = 0;
 
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = 1; // trails look the same at 1x and cost far less
       w = window.innerWidth;
       h = window.innerHeight;
       canvas.width = w * dpr;
@@ -27,7 +27,7 @@ export default function Starfield() {
     resize();
     window.addEventListener("resize", resize);
 
-    const stars = Array.from({ length: 260 }, () => ({
+    const stars = Array.from({ length: 170 }, () => ({
       x: (Math.random() - 0.5) * 2,
       y: (Math.random() - 0.5) * 2,
       z: Math.random(),

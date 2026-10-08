@@ -87,6 +87,30 @@ function noise(dur: number, vol = 0.15, at = 0, filterFreq = 1800) {
   src.start(t0);
 }
 
+// Noise through a band-pass filter that sweeps up then down: an arcade "whoosh".
+function whoosh(dur = 0.45, vol = 0.22) {
+  const ac = audio();
+  if (!ac) return;
+  const t0 = ac.currentTime;
+  const buffer = ac.createBuffer(1, Math.floor(ac.sampleRate * dur), ac.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const src = ac.createBufferSource();
+  src.buffer = buffer;
+  const filter = ac.createBiquadFilter();
+  filter.type = "bandpass";
+  filter.Q.value = 1.4;
+  filter.frequency.setValueAtTime(300, t0);
+  filter.frequency.exponentialRampToValueAtTime(3800, t0 + dur * 0.45);
+  filter.frequency.exponentialRampToValueAtTime(500, t0 + dur);
+  const gain = ac.createGain();
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(vol, t0 + dur * 0.4);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(filter).connect(gain).connect(ac.destination);
+  src.start(t0);
+}
+
 const arpeggio = (notes: number[], step: number, type: OscillatorType = "square", vol = 0.07) =>
   notes.forEach((f, i) => tone({ freq: f, dur: step * 1.6, type, vol, at: i * step }));
 
@@ -96,22 +120,34 @@ export const sfx = {
   back: () => tone({ freq: 700, to: 300, dur: 0.12, vol: 0.05 }),
   count: () => tone({ freq: 440, dur: 0.14, vol: 0.08 }),
   go: () => arpeggio([523, 659, 784, 1047], 0.06),
-  flash: () => tone({ freq: 200, to: 1600, dur: 0.25, type: "sawtooth", vol: 0.04 }),
+  flash: () => {
+    whoosh(0.5);
+    tone({ freq: 180, to: 1400, dur: 0.3, type: "sawtooth", vol: 0.025 });
+  },
   tick: () => tone({ freq: 1200, dur: 0.03, vol: 0.02, type: "triangle" }),
   urgent: () => tone({ freq: 980, dur: 0.09, vol: 0.07 }),
   submit: () => arpeggio([392, 523, 784], 0.05),
   scoreTick: () => tone({ freq: 1500 + Math.random() * 300, dur: 0.025, vol: 0.02, type: "triangle" }),
-  great: () => arpeggio([523, 659, 784, 1047, 1319, 1568], 0.07),
-  good: () => arpeggio([440, 554, 659, 880], 0.08),
-  meh: () => arpeggio([392, 349, 330], 0.12, "triangle", 0.08),
-  bad: () => {
-    tone({ freq: 300, to: 80, dur: 0.6, type: "sawtooth", vol: 0.06 });
-    tone({ freq: 310, to: 82, dur: 0.6, type: "square", vol: 0.03 });
+  // Win jingle: rising arpeggio, then a held major chord.
+  great: () => {
+    arpeggio([523, 659, 784, 1047, 1319], 0.07);
+    [1047, 1319, 1568].forEach((f) => tone({ freq: f, dur: 0.6, type: "square", vol: 0.04, at: 0.38 }));
   },
-  shatter: () => {
-    noise(0.7, 0.25, 0, 4000);
-    noise(0.4, 0.12, 0.12, 2500);
-    tone({ freq: 140, to: 40, dur: 0.5, type: "sawtooth", vol: 0.08 });
+  good: () => {
+    arpeggio([440, 554, 659], 0.08);
+    [880, 1109].forEach((f) => tone({ freq: f, dur: 0.45, type: "square", vol: 0.04, at: 0.26 }));
+  },
+  // Loss buzzer: two harsh low blasts.
+  bad: () => {
+    [0, 0.32].forEach((at) => {
+      tone({ freq: 110, dur: 0.26, type: "sawtooth", vol: 0.09, at });
+      tone({ freq: 116, dur: 0.26, type: "square", vol: 0.05, at });
+    });
+  },
+  // CRT switching off: high whine collapsing down, plus a static pop.
+  powerOff: () => {
+    tone({ freq: 1800, to: 60, dur: 0.38, type: "sawtooth", vol: 0.05 });
+    noise(0.18, 0.18, 0, 5000);
   },
   magic: () => arpeggio([659, 880, 1175, 1568], 0.05, "triangle", 0.06),
   error: () => tone({ freq: 160, dur: 0.25, type: "square", vol: 0.06 }),
@@ -121,6 +157,5 @@ export const sfx = {
 export function scoreSound(score: number) {
   if (score >= 80) sfx.great();
   else if (score >= 50) sfx.good();
-  else if (score >= 25) sfx.meh();
   else sfx.bad();
 }
