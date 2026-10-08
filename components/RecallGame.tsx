@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import HowToPlay from "./HowToPlay";
 import SceneRenderer from "./SceneRenderer";
@@ -575,7 +576,10 @@ export default function RecallGame() {
             </div>
           ))}
         </div>
-        <div className="row-end centered">
+        <div className="row-end centered end-actions">
+          <Link href="/" className="ghost" data-nosfx onClick={() => sfx.back()}>
+            ◄ Home
+          </Link>
           <button className="ghost" onClick={() => setPhase("pick")}>
             Change settings
           </button>

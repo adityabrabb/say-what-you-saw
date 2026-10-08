@@ -531,3 +531,5 @@ textarea:focus, .edit-input:focus {
   font-family: var(--font-head); font-size: 8px; letter-spacing: 0.08em;
   color: #1a1300; background: var(--yellow); box-shadow: 0 0 10px rgba(255, 230, 0, 0.5);
 }
+a.ghost { display: inline-flex; align-items: center; text-decoration: none; }
+.end-actions { margin-top: 24px; }
