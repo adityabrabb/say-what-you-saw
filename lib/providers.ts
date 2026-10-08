@@ -4,8 +4,7 @@ import "server-only";
 // is reused for the rest of the request (retries included).
 //   1. OpenRouter with the configured model (paid credits)
 //   2. Google Gemini direct (GEMINI_API_KEY, free tier)
-//   3. Groq (GROQ_API_KEY, free tier)
-//   4. OpenRouter free models (":free", no credits needed)
+//   3. OpenRouter free models (":free", no credits needed)
 
 export type Message = { role: "system" | "user" | "assistant"; content: string };
 
@@ -61,28 +60,28 @@ const openRouter: Provider = {
   },
 };
 
+// Google retires specific Gemini versions for new keys, so use the always-current aliases.
+const GEMINI_MODELS = () => [process.env.GEMINI_MODEL, "gemini-flash-latest", "gemini-flash-lite-latest"].filter(Boolean) as string[];
+
 const gemini: Provider = {
   name: "gemini",
   available: () => !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY),
-  call: (messages, maxTokens) =>
-    openAiCompatible(
-      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-      (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY)!,
-      { model: process.env.GEMINI_MODEL || "gemini-2.5-flash", messages, temperature: 0.3, max_tokens: maxTokens, response_format: { type: "json_object" } },
-      "Gemini"
-    ),
-};
-
-const groq: Provider = {
-  name: "groq",
-  available: () => !!process.env.GROQ_API_KEY,
-  call: (messages, maxTokens) =>
-    openAiCompatible(
-      "https://api.groq.com/openai/v1/chat/completions",
-      process.env.GROQ_API_KEY!,
-      { model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile", messages, temperature: 0.3, max_tokens: Math.min(maxTokens, 8000), response_format: { type: "json_object" } },
-      "Groq"
-    ),
+  async call(messages, maxTokens) {
+    let lastError: unknown;
+    for (const model of GEMINI_MODELS()) {
+      try {
+        return await openAiCompatible(
+          "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+          (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY)!,
+          { model, messages, temperature: 0.3, max_tokens: maxTokens, response_format: { type: "json_object" } },
+          `Gemini (${model})`
+        );
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    throw lastError;
+  },
 };
 
 // Free OpenRouter models change often, so pick them from the live model list (cached).
@@ -122,7 +121,7 @@ const openRouterFree: Provider = {
   },
 };
 
-const CHAIN = [openRouter, gemini, groq, openRouterFree];
+const CHAIN = [openRouter, gemini, openRouterFree];
 
 // One request's view of the chain: remembers which provider answered so retries reuse it.
 export class ProviderSession {
@@ -132,7 +131,7 @@ export class ProviderSession {
 
   async call(messages: Message[], maxTokens: number): Promise<string> {
     const providers = CHAIN.filter((p) => p.available());
-    if (!providers.length) throw new Error("No AI provider configured (set OPENROUTER_API_KEY, GEMINI_API_KEY or GROQ_API_KEY)");
+    if (!providers.length) throw new Error("No AI provider configured (set OPENROUTER_API_KEY or GEMINI_API_KEY)");
     for (; this.index < providers.length; this.index++) {
       const provider = providers[this.index];
       try {

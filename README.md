@@ -4,7 +4,7 @@
 
 Live: **https://say-what-you-saw.vercel.app**
 
-Say What You Saw turns what you *say* into animated scenes. Describe something out loud and it becomes moving shapes, labels and arrows. Or flip it around: a scene flashes on screen, it disappears, and you have to describe what you saw from memory. The closer your words rebuild the original, the higher you score.
+Say What You Saw turns what you *say* into animated scenes. Describe something out loud and it becomes a moving, neon-lit animation. Or flip it around: a scene flashes on screen, vanishes, and you have to describe what you saw from memory. The closer your words rebuild the original, the higher you score.
 
 Your voice isn't a remote control here. It's the skill being tested.
 
@@ -16,91 +16,81 @@ Built for the Hacker House Goa 2026 × Wispr Flow challenge, and built **entirel
 
 ### Recall (the game)
 
-1. Pick a difficulty: **Easy** shows the target for 5 seconds, **Medium** for 3, **Hard** for 2. Pick 3 or 5 rounds.
-2. A neon 3‑2‑1‑LOOK countdown, then the target scene flashes and vanishes.
-3. You get **30 seconds** to describe it. Dictate with Wispr Flow straight into the box. At zero it auto-submits.
-4. Your description is turned into a scene with the same generator Studio uses.
-5. **Reveal:** your scene sits next to the original. Objects you missed get pulsing red rings, and things you invented get yellow ones. The score counts up, each category bar fills, and you get a one-line verdict ("Photographic memory. Are you a camera?" … "The scene is filing a missing persons report.").
-6. A running total across rounds, plus a best score per difficulty and round count saved in your browser.
-
-Targets get harder as the difficulty goes up:
-
-- **Easy:** 11 simple shape scenes (a traffic light, a snowman, three stars and an arrow, a sliding square…).
-- **Medium:** 8 illustrated scenes with backdrops and motion (a dog chasing a football in the park, a rocket leaving Earth, fish swimming under a sailboat…).
-- **Hard:** 8 busy scenes with 6–9 objects, weather, camera moves and staggered entrances (a ship in a thunderstorm, rush hour in the rain, a neon arcade, a birthday party…), all in a 2-second flash.
+1. A **How to Play** tutorial with live mini-demos opens on your first visit.
+2. Pick a difficulty and 3 or 5 rounds:
+   - **Easy:** the target shows for 5 seconds. 11 simple scenes (a traffic light in the city, a cat and a dog under the sun, the Moon orbiting Earth…).
+   - **Medium:** 3 seconds. 8 illustrated scenes with backdrops and motion (a dog chasing a football in the park, a rocket leaving Earth…).
+   - **Hard:** 2 seconds. 8 busy scenes with 6–9 objects, weather, camera moves and staggered entrances (a ship in a thunderstorm, rush hour in the rain, a birthday party…).
+3. A neon 3‑2‑1‑LOOK countdown, then the target flashes and disappears.
+4. You get **30 seconds** to describe it. Dictate with Wispr Flow straight into the box. It auto-submits at zero (or press Ctrl+Enter).
+5. Your words are rebuilt into a scene by the same generator Studio uses.
+6. **Reveal:** your scene sits next to the original. Things you missed get pulsing red rings and are named ("Missed: robot, dice, coin"), and things you invented get yellow rings. The score counts up and settles, each category bar fills, and you get a one-line verdict ("Photographic memory. Are you a camera?" … "The scene is filing a missing persons report.").
+7. Running total, win jingle or loss buzzer, screen flashes and shakes, confetti on high scores, and a best score saved per difficulty and round count.
 
 ### Studio (the creator)
 
-- Type or dictate any explanation ("The earth goes around the sun, the moon goes around the earth…") and press **Generate**. You get a short animated explainer of 1–4 scenes with play/pause, a timeline scrubber and scene chips.
-- **Edit by voice:** "make the moon smaller", "slow down the earth", "add a label saying umbra". An edit **patches** the existing scene instead of regenerating it. Each edit lands in a history list showing exactly what changed (`moon r: 5 → 3`), and **Undo** restores the previous version.
+- Type or dictate any explanation ("Bees collect nectar and bring it back to the hive…") and press **Generate**. You get a 1–3 scene animated explainer designed like a motion graphic: a fitting backdrop, 6–12 layered objects, labels and arrows that explain, most things animated, and a slow camera move.
+- **Showcase bar:** three hand-made explainers drawn with detailed illustrations: a **solar eclipse**, the **water cycle** and a **rocket launch**.
+- **Edit by voice:** "make the moon smaller", "slow down the earth", "add a label saying umbra". Edits **patch** the existing scene instead of regenerating it. Each edit lands in a history list showing exactly what changed (`moon w: 62 → 93`), and **Undo** restores the previous version.
+- Playback controls: play/pause, a timeline scrubber and scene chips.
 
 ---
 
-## How the scoring works (no AI)
+## How the scoring works (deterministic, no AI)
 
-The generator is an LLM, but the **judge is not**. Scoring is plain deterministic code ([`lib/score.ts`](lib/score.ts)), so the same two scenes always get the same score.
+The generator is an LLM, but the **judge is not**. Scoring is plain code ([`lib/score.ts`](lib/score.ts)), so the same two scenes always get the same score.
 
 **1. Match objects.** Every target object is paired with at most one of your objects, greedily, in this priority order:
-- same **type** first (circle ↔ circle),
-- then closest **colour** (colours are bucketed by hue: red, orange, yellow, green, blue, purple, pink, brown, white, grey, black),
+- same **kind** first (circle ↔ circle; icons and illustrations match by **name**, so "dog" ↔ "dog"),
+- then closest **colour** (colours are bucketed by hue: red, orange, yellow, green, blue, purple, pink, brown, white, grey, black) or, for pictures, the same name (a related one like tree ↔ pine tree earns partial credit),
 - then nearest **position**.
 
-A different shape can only stand in for the original if the colour is exactly right. A pink star will never pass for a red circle.
+A different kind of thing only stands in for the original if the colour or name is exactly right, so a pink star never passes for a red circle.
 
-**2. Weight each match by confidence.** Right shape and right colour gets full weight. Right shape in the wrong colour gets about a quarter. Partial credit everywhere else is scaled by this weight, so a lucky guess can't collect points across the board.
+**2. Weight each match by confidence.** The right thing in the right colour gets full weight. The right shape in the wrong colour gets about a quarter. All other credit is scaled by this weight, so a random guess can't collect points everywhere.
 
 **3. Score five categories, 20 points each (total 100):**
 
 | Category | What it checks |
 |---|---|
 | **Objects & count** | Matched objects vs. everything in both scenes (an F1 score). Misses *and* made-up extras cost points. |
-| **Colour** | Exact colour family = full credit, neighbouring shade (red/orange, blue/purple) = partial. |
+| **Colour** | The same colour family (or the same icon) = full credit, a neighbouring shade or related icon = partial. |
 | **Position** | Mostly *relative* layout: is A still above / left of B? Plus a little for absolute placement. |
 | **Size** | Ratio of sizes. Within 15% is full marks. |
-| **Motion** | Same kind of motion (move / fade / grow / orbit) and the same direction. A still scene only earns these points for objects you actually remembered. |
+| **Motion** | The same kind of motion (move / fade / grow / orbit) in the same direction. A still scene only earns these points for things you actually remembered. |
 
-Objects you didn't mention count as zero in every category, so "a red circle" on a two-object scene can't score more than about half.
+Things you didn't mention count as zero everywhere, so naming half the scene can't score more than about half.
 
 ---
 
-## What scenes can do
-
-Scenes are JSON, and both the hand-made targets and the AI-generated ones use the same features:
-
-- **Shapes and icons:** circles, rectangles, stars, text and arrows, plus **184 neon line icons** (animals, vehicles, food, weather, planets, buildings, objects…). They come from Tabler, Lucide and Game Icons, compiled into one SVG sprite and drawn as glowing neon tubes (soft glow, colour stroke, hot core) in the arcade palette.
-- **Hand-drawn art:** detailed gradient-shaded illustrations for hero objects: sun with a spinning corona, Earth with drifting continents and a night side, cratered moon, ringed planet, eclipse shadow cone, layered clouds, rain cloud, snow-capped mountain, sea, rocket, flickering flame, billowing smoke, launch gantry, water drop and rising vapour. Used by the Studio showcases (solar eclipse, water cycle, rocket launch) and available to the generator.
-- **Backdrops:** deep space with twinkling stars, a daytime sky with drifting clouds, a sunset ocean with rolling waves, a night city with lit windows, and a neon synthwave grid.
-- **Weather particles:** sparkle, rain, snow.
-- **Motion:** move, fade, grow and orbit with easing (`back`, `bounce`, `elastic`…), motion trails on anything that moves, staggered pop-in entrances, and a slow camera zoom and pan with parallax.
-- **Look:** gradient-shaded shapes, soft glows and contact shadows.
-
-**Performance:** every glow and shadow is a gradient, not a blur filter. Backdrops, particles and twinkles are animated by CSS alone. The stage is split into three GPU layers (backdrop, objects, weather), so a moving object never forces the backdrop to redraw, and the camera is a pure CSS transform. Heavy scenes hold 120–145 fps in Chrome.
-
 ## Tech stack
 
-- **Next.js 16** (App Router) + **React 19** + **TypeScript**
-- **SVG renderer** with a small animation engine: scenes are JSON (objects + a timeline of `move` / `fade` / `grow` / `orbit`)
-- **OpenRouter** for the LLM (defaults to `google/gemini-2.5-flash`)
-- **Zod** to validate every model response. Bad JSON is sent back to the model with the exact error and retried, up to 3 attempts.
-- Voice edits as **JSON patches** (`updateObject`, `addObject`, `updateAnimation`, …), applied to a copy and re-validated before they're accepted
-- **three.js** for the low-poly neon moon on the landing screen (loaded lazily, paused off-screen)
-- **Motion** for the countdown and score animations, **canvas-confetti** for celebrations
-- **Web Audio API** for every sound effect. All synthesised in the browser, no audio files.
-- **Tabler**, **Lucide** and **Game Icons** via Iconify, compiled into a neon sprite by `scripts/build-icons.mjs`
-- **AI fallback chain:** OpenRouter (your model), then Google Gemini and Groq free tiers if their keys are set, then OpenRouter's free models, and finally an **offline keyword engine** that builds scenes and applies common voice edits with no AI at all, so the app never just breaks
-- Deployed on **Vercel**
+- **Next.js 16** (App Router) + **React 19** + **TypeScript**, deployed on **Vercel**
+- **Scene engine:** scenes are JSON (objects plus a timeline of `move` / `fade` / `grow` / `orbit` with easing), rendered as SVG
+- **Visuals:**
+  - **184 neon line icons** from Tabler, Lucide and Game Icons (via Iconify), compiled into one SVG sprite and drawn as glowing neon tubes
+  - **15 hand-drawn illustrations** (sun, Earth, moon, planet, shadow cone, clouds, rain cloud, mountain, sea, rocket, flame, smoke, launch pad, drop, vapour)
+  - **5 backdrops:** space, sky, ocean, night city, neon grid
+  - **Particles:** rain, snow, sparkle
+  - Motion trails, staggered entrances, camera zoom and pan, gradient shading, glows and shadows
+- **Performance:** every glow and shadow is a gradient (no blur filters), backdrops and particles are animated by CSS alone, and the stage is split into three GPU layers, so a moving object never repaints the backdrop. Heavy scenes hold 100–145 fps.
+- **AI:** **OpenRouter** (default `google/gemini-2.5-flash`) with **Zod** validation. Bad JSON is sent back with the exact error and retried. Unknown icon names snap to the closest listed icon. Voice edits are small JSON patches, re-validated before they're applied.
+- **Fallback chain:** OpenRouter → **Google Gemini** (free tier) → OpenRouter free models → an **offline keyword engine** that builds scenes and applies common edits with no AI at all, shown as **OFFLINE BUILD**
+- **Game feel:** **Web Audio API** chiptune sounds (all synthesised, no audio files), **Motion** for counters, **canvas-confetti**, **three.js** for the low-poly neon moon on the landing screen
+- **Arcade theme:** Press Start 2P and Chakra Petch fonts, warp star field, synthwave grid, CRT scan lines and power-on/off transitions
 
 ```
 app/            pages (landing, /recall, /studio) and API routes (/api/generate, /api/edit)
-components/     SceneRenderer, Player, RecallGame, Studio, NeonMoon, Starfield, …
-lib/            scene schema, animation engine, scoring, patching, generation, sounds, fx
+components/     SceneRenderer, SceneBackground, Art, Player, RecallGame, HowToPlay, Studio, NeonMoon…
+lib/            scene schema, engine, scoring, patching, generation, providers, offline engine, icons, sounds
+scripts/        build-icons.mjs (regenerates the neon icon sprite)
 ```
 
 ---
 
 ## Run it locally
 
-You need **Node.js 20+** and an **OpenRouter API key** (get one at https://openrouter.ai/keys).
+You need **Node.js 20+**, an **OpenRouter API key** (https://openrouter.ai/keys) and, optionally, a free **Gemini API key** (https://aistudio.google.com/apikey) as a backup.
 
 ```bash
 git clone https://github.com/adityabrabb/say-what-you-saw.git
@@ -108,24 +98,22 @@ cd say-what-you-saw
 npm install
 ```
 
-### Add your OpenRouter API key
+### Add your API keys
 
 Create a file called **`.env.local`** in the project root:
 
 ```bash
+# Required: main AI provider
 OPENROUTER_API_KEY=sk-or-v1-your-key-here
 
-# Optional: use a different OpenRouter model
-# OPENROUTER_MODEL=google/gemini-2.5-flash
+# Recommended: free backup if OpenRouter fails or runs out of credits
+GEMINI_API_KEY=your-gemini-key-here
 
-# Optional free-tier fallbacks, tried if OpenRouter fails or runs out of credits
-# GEMINI_API_KEY=...   (aistudio.google.com/apikey)
-# GROQ_API_KEY=...     (console.groq.com/keys)
+# Optional: a different OpenRouter model
+# OPENROUTER_MODEL=google/gemini-2.5-flash
 ```
 
-If every AI provider is unavailable, the app switches to its offline engine and marks the result **OFFLINE BUILD**.
-
-`.env.local` is git-ignored, so your key never gets committed. There's a template in [`.env.example`](.env.example).
+`.env.local` is git-ignored, so your keys never get committed. There's a template in [`.env.example`](.env.example).
 
 Then start it:
 
@@ -135,9 +123,9 @@ npm run dev
 
 Open http://localhost:3000.
 
-> Without a key, the landing page and the built-in solar-system demo still work, but generating scenes, scoring Recall rounds and voice edits will show "Missing OPENROUTER_API_KEY".
+> Without any keys, everything still runs. Generation and voice edits fall back to the offline engine (marked **OFFLINE BUILD**), so Recall stays playable.
 
-**Deploying to Vercel:** add the same `OPENROUTER_API_KEY` under *Project → Settings → Environment Variables*, then redeploy.
+**Deploying to Vercel:** add `OPENROUTER_API_KEY` and `GEMINI_API_KEY` under *Project → Settings → Environment Variables*, then redeploy.
 
 ---
 
@@ -147,10 +135,10 @@ Every line of this project was written by Claude Code from prompts I **spoke** u
 
 The workflow:
 
-1. I hold the Wispr Flow hotkey and talk: "add a landing screen with two big arcade buttons", "the scoring is too generous, a random guess got 40, make it stricter", "the screen break is laggy, make it faster".
-2. Wispr Flow turns that into clean text right in the Claude Code prompt. It handled long, rambly, multi-part instructions, and it picked up every prompt without me retyping anything.
-3. Claude Code wrote the code, ran a production build, fixed errors, tested pages in a headless browser, and committed and pushed each working step.
+1. I hold the Wispr Flow hotkey and talk: "add a landing screen with two big arcade buttons", "a random guess got 40, make the scoring stricter", "the screen break is laggy, make it faster", "replace the emoji with neon outline icons".
+2. Wispr Flow turns that into clean text right in the Claude Code prompt. It handled long, rambly, multi-part instructions and picked up every prompt, with no retyping.
+3. Claude Code wrote the code, ran production builds, fixed errors, tested pages in a headless browser (screenshots, frame rates, console errors), and committed, pushed and deployed each working step.
 
-Honest note on "keys typed": the only physical keys were **Enter** to send a prompt and the Wispr Flow **hotkey**. Everything else, including every prompt, every bug report and every design change, was dictated. The full build was screen-recorded with Wispr Flow visible.
+Honest note on "keys typed": the only physical keys were **Enter** to send a prompt and the Wispr Flow **hotkey**. Everything else, including every prompt, bug report and design change, was dictated. The full build was screen-recorded with Wispr Flow visible.
 
-Wispr Flow's small floating bar stays out of the way while you work, and it's fast and accurate enough that talking to your editor feels faster than typing to it. Fittingly, the app it built is a game about how well you can **say what you saw**.
+Wispr Flow's small floating bar stays out of the way while you work, and it's fast and accurate enough that talking to your editor feels quicker than typing to it. Fittingly, the app it built is a game about how well you can **say what you saw**.
