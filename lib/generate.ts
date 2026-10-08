@@ -5,6 +5,8 @@ import type { Scene } from "./scene";
 
 const MODEL = process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash";
 const MAX_ATTEMPTS = 3;
+// Without an explicit cap OpenRouter reserves the model's full output limit, which needs far more credits.
+const MAX_TOKENS: Record<"recall" | "studio", number> = { recall: 4000, studio: 8000 };
 
 export type GenerateMode = "recall" | "studio";
 
@@ -43,7 +45,7 @@ const MODE_RULES: Record<GenerateMode, string> = {
 
 type Message = { role: "system" | "user" | "assistant"; content: string };
 
-async function callModel(messages: Message[]): Promise<string> {
+async function callModel(messages: Message[], maxTokens: number): Promise<string> {
   const key = process.env.OPENROUTER_API_KEY || process.env.api_openrouter_API_key;
   if (!key) throw new Error("Missing OPENROUTER_API_KEY environment variable");
 
@@ -58,6 +60,7 @@ async function callModel(messages: Message[]): Promise<string> {
       model: MODEL,
       messages,
       temperature: 0.3,
+      max_tokens: maxTokens,
       response_format: { type: "json_object" },
     }),
   });
@@ -85,7 +88,7 @@ export async function generateScenes(description: string, mode: GenerateMode): P
 
   let lastError = "";
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const reply = await callModel(messages);
+    const reply = await callModel(messages, MAX_TOKENS[mode]);
     try {
       const parsed = scenesResponse.safeParse(extractJson(reply));
       if (!parsed.success) throw new Error(z.prettifyError(parsed.error));
