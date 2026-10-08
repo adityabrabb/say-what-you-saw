@@ -7,7 +7,8 @@ import { celebrate } from "@/lib/confetti";
 import { flash, shake } from "@/lib/fx";
 import { scoreSound, sfx } from "@/lib/sound";
 import { requestScenes } from "@/lib/api";
-import { DESCRIBE_SECONDS, DIFFICULTIES, recallPool, type Difficulty } from "@/lib/recallPool";
+import { iconUrl } from "@/lib/icons";
+import { DESCRIBE_SECONDS, DIFFICULTIES, poolFor, type Difficulty } from "@/lib/recallPool";
 import { CATEGORY_LABELS, POINTS_PER_CATEGORY, scoreScenes, verdictFor, type Category, type ScoreResult } from "@/lib/score";
 import type { Scene } from "@/lib/scene";
 
@@ -27,15 +28,18 @@ const ROUND_OPTIONS = [3, 5] as const;
 const MISSED_COLOUR = "#E5484D";
 const EXTRA_COLOUR = "#F5C518";
 
-// Pick a target not seen yet this session; reshuffle once the pool runs out.
-function nextTarget(seen: Set<string>): Scene {
-  let fresh = recallPool.filter((s) => !seen.has(s.id));
+// Pick a target from the difficulty's pool not seen yet this session; reshuffle once it runs out.
+function nextTarget(seen: Set<string>, difficulty: Difficulty): Scene {
+  const pool = poolFor(difficulty);
+  let fresh = pool.filter((s) => !seen.has(s.id));
   if (fresh.length === 0) {
-    seen.clear();
-    fresh = recallPool;
+    pool.forEach((s) => seen.delete(s.id));
+    fresh = pool;
   }
   const pick = fresh[Math.floor(Math.random() * fresh.length)];
   seen.add(pick.id);
+  // Warm the cache so icons are already there when the 2-second flash starts.
+  pick.objects.forEach((o) => o.type === "icon" && o.icon && (new Image().src = iconUrl(o.icon)));
   return pick;
 }
 
@@ -216,7 +220,7 @@ export default function RecallGame() {
 
   const startRound = () => {
     setDescription("");
-    setResults((rs) => [...rs, { target: nextTarget(seen.current), said: "", generated: null, score: null, error: "" }]);
+    setResults((rs) => [...rs, { target: nextTarget(seen.current, difficulty), said: "", generated: null, score: null, error: "" }]);
     enter("ready");
   };
 

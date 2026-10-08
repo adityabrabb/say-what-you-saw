@@ -7,8 +7,8 @@ export const solarSystem: Video = {
       id: "orbits",
       title: "Who orbits whom",
       duration: 14,
-      background: "#070b18",
-      stars: true,
+      background: "space",
+      camera: { zoom: 1.1 },
       caption: "The Earth goes around the Sun, and the Moon goes around the Earth.",
       objects: [
         { id: "earthPath", type: "circle", x: 400, y: 235, r: 150, fill: "none", stroke: "#8aa4c8", strokeWidth: 1, dashed: true, opacity: 0 },

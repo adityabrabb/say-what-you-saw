@@ -1,68 +1,141 @@
-import { computeFrame, type FrameObject } from "@/lib/engine";
-import { STAGE_H, STAGE_W, type Scene } from "@/lib/scene";
+import { memo, useId, useMemo } from "react";
+import { SceneBackground, SceneParticles } from "./SceneBackground";
+import { cameraAt, computeFrame, type FrameObject } from "@/lib/engine";
+import { normalise, shade } from "@/lib/colour";
+import { ICON_GROUPS, iconUrl } from "@/lib/icons";
+import { STAGE_H, STAGE_W, type Scene, type SceneObject } from "@/lib/scene";
 
-// Deterministic starfield so server and client render identically.
-const STARS = Array.from({ length: 70 }, (_, i) => {
-  const r = (n: number) => {
-    const s = Math.sin(i * 12.9898 + n * 78.233) * 43758.5453;
-    return s - Math.floor(s);
-  };
-  // Rounded so server and browser floating-point agree during hydration.
-  const q = (v: number) => Math.round(v * 100) / 100;
-  return { x: q(r(1) * STAGE_W), y: q(r(2) * STAGE_H), r: q(0.4 + r(3) * 1.1), o: q(0.25 + r(4) * 0.6) };
+// Rendering budget: only objects, trails and the camera change per frame. Backgrounds,
+// particles and gradient defs are memoised, and every glow/shadow is a gradient, not a blur filter.
+
+const DARK_BACKDROPS = new Set(["space", "grid", "city"]);
+const LIGHT_BACKDROPS = new Set(["sky", "ocean"]);
+const SOLID = new Set(["circle", "rect", "star", "icon"]);
+const TRAIL_STEPS = 5;
+const TRAIL_GAP = 0.05; // seconds between ghosts
+
+export interface Highlight {
+  id: string;
+  colour: string;
+}
+
+const isSolidFill = (o: SceneObject) => !!o.fill && o.fill !== "none";
+
+// Rough radius of an object, for halos, shadows and highlight rings.
+function radiusOf(o: FrameObject): number {
+  switch (o.type) {
+    case "circle":
+    case "star":
+      return (o.r ?? 20) * o.scale;
+    case "rect":
+    case "image":
+      return (Math.max(o.w ?? 60, o.h ?? 40) / 2) * o.scale;
+    case "icon":
+      return ((o.w ?? 80) / 2) * o.scale;
+    case "text":
+      return (o.fontSize ?? 16) * Math.max(1, (o.text ?? "").length) * 0.32 * o.scale;
+    case "arrow":
+      return Math.hypot((o.x2 ?? o.x + 60) - o.x, (o.y2 ?? o.y) - o.y) / 2;
+  }
+}
+
+function starPoints(x: number, y: number, r: number): string {
+  return Array.from({ length: 10 }, (_, i) => {
+    const rad = i % 2 === 0 ? r : r * 0.45;
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    return `${(x + rad * Math.cos(a)).toFixed(1)},${(y + rad * Math.sin(a)).toFixed(1)}`;
+  }).join(" ");
+}
+
+// Gradient fills and glow halos for every object. Recomputed only when the objects change.
+const ObjectDefs = memo(function ObjectDefs({ objects, p }: { objects: SceneObject[]; p: string }) {
+  return (
+    <>
+      <marker id={`${p}arrow`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="context-stroke" />
+      </marker>
+      <radialGradient id={`${p}shadow`}>
+        <stop offset="0%" stopColor="#000" stopOpacity="0.45" />
+        <stop offset="100%" stopColor="#000" stopOpacity="0" />
+      </radialGradient>
+      {objects.map((o) => {
+        const base = normalise(isSolidFill(o) ? o.fill : o.stroke, o.type === "icon" ? "#fff3c4" : "#cccccc");
+        const shaded = isSolidFill(o) && (o.type === "circle" || o.type === "rect" || o.type === "star");
+        return (
+          <g key={o.id}>
+            {shaded &&
+              (o.type === "rect" ? (
+                <linearGradient id={`${p}f-${o.id}`} x1="0" y1="0" x2="0.35" y2="1">
+                  <stop offset="0%" stopColor={shade(base, 0.35)} />
+                  <stop offset="55%" stopColor={base} />
+                  <stop offset="100%" stopColor={shade(base, -0.3)} />
+                </linearGradient>
+              ) : (
+                <radialGradient id={`${p}f-${o.id}`} cx="0.36" cy="0.32" r="0.75">
+                  <stop offset="0%" stopColor={shade(base, o.glow ? 0.7 : 0.45)} />
+                  <stop offset="50%" stopColor={base} />
+                  <stop offset="100%" stopColor={shade(base, -0.35)} />
+                </radialGradient>
+              ))}
+            <radialGradient id={`${p}h-${o.id}`}>
+              <stop offset="35%" stopColor={shade(base, 0.2)} stopOpacity="0.55" />
+              <stop offset="100%" stopColor={base} stopOpacity="0" />
+            </radialGradient>
+          </g>
+        );
+      })}
+    </>
+  );
 });
 
-function renderObject(o: FrameObject) {
+function shapeFill(o: FrameObject, p: string) {
+  return isSolidFill(o) ? `url(#${p}f-${o.id})` : "none";
+}
+
+// Draw one object. `ghost` draws a simplified copy for motion trails.
+function drawObject(o: FrameObject, p: string, ghost = false, key = o.id) {
+  const stroke = o.stroke && o.stroke !== "none" ? o.stroke : undefined;
   const common = {
     opacity: o.opacity,
-    stroke: o.stroke,
-    strokeWidth: o.strokeWidth ?? (o.stroke ? 2 : undefined),
-    strokeDasharray: o.dashed ? "4 6" : undefined,
+    stroke,
+    strokeWidth: stroke ? o.strokeWidth ?? 2 : undefined,
+    strokeDasharray: o.dashed ? "5 7" : undefined,
   };
-  // Scale around the object's own centre.
   const transform = o.scale !== 1 ? `translate(${o.x} ${o.y}) scale(${o.scale}) translate(${-o.x} ${-o.y})` : undefined;
 
   switch (o.type) {
     case "circle":
-      return (
-        <circle
-          key={o.id}
-          cx={o.x}
-          cy={o.y}
-          r={o.r ?? 20}
-          fill={o.glow ? `url(#glow-${o.id})` : o.fill ?? "#ccc"}
-          filter={o.glow ? "url(#soft-glow)" : undefined}
-          transform={transform}
-          {...common}
-        />
-      );
+      return <circle key={key} cx={o.x} cy={o.y} r={o.r ?? 20} fill={shapeFill(o, p)} transform={transform} {...common} />;
     case "rect": {
       const w = o.w ?? 60;
       const h = o.h ?? 40;
-      return <rect key={o.id} x={o.x - w / 2} y={o.y - h / 2} width={w} height={h} rx={6} fill={o.fill ?? "#ccc"} transform={transform} {...common} />;
+      return <rect key={key} x={o.x - w / 2} y={o.y - h / 2} width={w} height={h} rx={Math.min(10, w / 6, h / 6)} fill={shapeFill(o, p)} transform={transform} {...common} />;
     }
-    case "star": {
-      // Five-pointed star, outer radius r, pointing up.
-      const r = o.r ?? 24;
-      const points = Array.from({ length: 10 }, (_, i) => {
-        const rad = i % 2 === 0 ? r : r * 0.42;
-        const a = -Math.PI / 2 + (i * Math.PI) / 5;
-        return `${(o.x + rad * Math.cos(a)).toFixed(2)},${(o.y + rad * Math.sin(a)).toFixed(2)}`;
-      }).join(" ");
-      return <polygon key={o.id} points={points} fill={o.fill ?? "#ccc"} strokeLinejoin="round" transform={transform} {...common} />;
+    case "star":
+      return <polygon key={key} points={starPoints(o.x, o.y, o.r ?? 24)} fill={shapeFill(o, p)} strokeLinejoin="round" transform={transform} {...common} />;
+    case "icon": {
+      const s = o.w ?? 80;
+      if (!o.icon || !(o.icon in ICON_GROUPS))
+        return <circle key={key} cx={o.x} cy={o.y} r={s / 2.4} fill="#9ba1a6" opacity={o.opacity} transform={transform} />;
+      return <image key={key} href={iconUrl(o.icon)} x={o.x - s / 2} y={o.y - s / 2} width={s} height={s} opacity={o.opacity} transform={transform} />;
     }
     case "text":
+      if (ghost) return null;
       return (
         <text
-          key={o.id}
+          key={key}
           x={o.x}
           y={o.y}
           fill={o.fill ?? "#fff"}
-          fontSize={o.fontSize ?? 16}
+          fontSize={o.fontSize ?? 18}
           textAnchor="middle"
           dominantBaseline="middle"
           fontFamily="var(--font-stage)"
-          fontWeight={600}
+          fontWeight={700}
+          stroke="rgba(0,0,0,0.55)"
+          strokeWidth={4}
+          strokeLinejoin="round"
+          paintOrder="stroke"
           transform={transform}
           opacity={o.opacity}
         >
@@ -72,96 +145,127 @@ function renderObject(o: FrameObject) {
     case "arrow":
       return (
         <line
-          key={o.id}
+          key={key}
           x1={o.x}
           y1={o.y}
           x2={o.x2 ?? o.x + 60}
           y2={o.y2 ?? o.y}
-          markerEnd="url(#arrowhead)"
+          markerEnd={`url(#${p}arrow)`}
+          strokeLinecap="round"
           {...common}
-          stroke={o.stroke ?? o.fill ?? "#fff"}
-          strokeWidth={o.strokeWidth ?? 3}
+          stroke={stroke ?? o.fill ?? "#fff"}
+          strokeWidth={o.strokeWidth ?? 4}
         />
       );
     case "image": {
       const w = o.w ?? 80;
       const h = o.h ?? 80;
-      return <image key={o.id} href={o.href} x={o.x - w / 2} y={o.y - h / 2} width={w} height={h} opacity={o.opacity} transform={transform} />;
+      return <image key={key} href={o.href} x={o.x - w / 2} y={o.y - h / 2} width={w} height={h} opacity={o.opacity} transform={transform} />;
     }
   }
 }
 
-export interface Highlight {
-  id: string;
-  colour: string;
+// Soft glow behind an object: a radial-gradient disc, far cheaper than a blur filter.
+function drawHalo(o: FrameObject, p: string) {
+  if (o.opacity < 0.02) return null;
+  if (o.type === "arrow") {
+    return (
+      <line key={`halo${o.id}`} x1={o.x} y1={o.y} x2={o.x2 ?? o.x + 60} y2={o.y2 ?? o.y}
+        stroke={o.stroke ?? o.fill ?? "#fff"} strokeWidth={(o.strokeWidth ?? 4) * 4} strokeLinecap="round" opacity={0.18 * o.opacity} />
+    );
+  }
+  if (o.type === "text") return null;
+  const r = radiusOf(o) * (o.glow ? 2.1 : 1.7);
+  return <circle key={`halo${o.id}`} cx={o.x} cy={o.y} r={r} fill={`url(#${p}h-${o.id})`} opacity={o.opacity} />;
 }
 
-// Ring that circles an object, used on the reveal screen for missed/extra objects.
+// Soft contact shadow under an object.
+function drawShadow(o: FrameObject, p: string) {
+  if (o.opacity < 0.02) return null;
+  const r = radiusOf(o);
+  return <ellipse key={`sh${o.id}`} cx={o.x + r * 0.12} cy={o.y + r * 0.95} rx={r * 0.95} ry={r * 0.24} fill={`url(#${p}shadow)`} opacity={o.opacity * 0.9} />;
+}
+
 function ring(o: FrameObject, colour: string) {
   let cx = o.x;
   let cy = o.y;
-  let r: number;
   if (o.type === "arrow") {
-    const x2 = o.x2 ?? o.x + 60;
-    const y2 = o.y2 ?? o.y;
-    cx = (o.x + x2) / 2;
-    cy = (o.y + y2) / 2;
-    r = Math.hypot(x2 - o.x, y2 - o.y) / 2;
-  } else if (o.type === "text") {
-    r = ((o.fontSize ?? 16) * Math.max(1, (o.text ?? "").length) * 0.32) * o.scale;
-  } else if (o.type === "rect" || o.type === "image") {
-    r = (Math.hypot(o.w ?? 60, o.h ?? 40) / 2) * o.scale;
-  } else {
-    r = (o.r ?? 20) * o.scale;
+    cx = (o.x + (o.x2 ?? o.x + 60)) / 2;
+    cy = (o.y + (o.y2 ?? o.y)) / 2;
   }
   return (
-    <circle
-      key={`ring-${o.id}`}
-      className="miss-ring"
-      cx={cx}
-      cy={cy}
-      r={r + 12}
-      fill="none"
-      stroke={colour}
-      strokeWidth={4}
-      strokeDasharray="10 6"
-    />
+    <circle key={`ring-${o.id}`} className="miss-ring" cx={cx} cy={cy} r={radiusOf(o) + 12}
+      fill="none" stroke={colour} strokeWidth={4} strokeDasharray="10 6" />
   );
 }
 
 export default function SceneRenderer({ scene, time, highlights = [] }: { scene: Scene; time: number; highlights?: Highlight[] }) {
+  const p = useId().replace(/[^a-zA-Z0-9]/g, "") + "-";
   const frame = computeFrame(scene, time);
   const byId = new Map(frame.map((o) => [o.id, o]));
-  const glowing = scene.objects.filter((o) => o.glow);
+  const cam = cameraAt(scene, time);
+
+  const bg = scene.background ?? "";
+  const glowAll = scene.glow ?? DARK_BACKDROPS.has(bg);
+  const shadowsOn = LIGHT_BACKDROPS.has(bg);
+
+  // Objects that move or orbit get trails. Depends only on the timeline.
+  const movers = useMemo(() => {
+    const ids = new Set<string>();
+    for (const a of scene.timeline) if (a.action === "move" || a.action === "orbit") ids.add(a.target);
+    return ids;
+  }, [scene.timeline]);
+
+  // Ghost copies at slightly earlier times form the motion trail.
+  const trails: React.ReactNode[] = [];
+  const trailIds = scene.objects.filter((o) => (o.trail ?? movers.has(o.id)) && o.type !== "text").map((o) => o.id);
+  if (trailIds.length) {
+    for (let k = TRAIL_STEPS; k >= 1; k--) {
+      const t = time - k * TRAIL_GAP;
+      if (t < 0) continue;
+      const past = new Map(computeFrame(scene, t).map((o) => [o.id, o]));
+      for (const id of trailIds) {
+        const now = byId.get(id);
+        const then = past.get(id);
+        if (!now || !then || Math.hypot(now.x - then.x, now.y - then.y) < 1.5) continue;
+        const fade = (1 - k / (TRAIL_STEPS + 1)) * 0.32;
+        trails.push(drawObject({ ...then, opacity: then.opacity * fade, scale: then.scale * (1 - k * 0.05) }, p, true, `tr${k}-${id}`));
+      }
+    }
+  }
+
+  const halos = frame.filter((o) => o.glow || (glowAll && o.type !== "text")).map((o) => drawHalo(o, p));
+  const shadows = frame.filter((o) => (o.shadow ?? (shadowsOn && SOLID.has(o.type))) && !o.follow).map((o) => drawShadow(o, p));
+
+  // Three stacked layers so a moving object never forces the static backdrop to repaint.
+  // The camera is a CSS transform on each layer (GPU-composited); the backdrop drifts less for parallax.
+  const camCss = (zoom: number, x: number, y: number) =>
+    scene.camera ? { transform: `translate(${(-x / STAGE_W) * 100}%, ${(-y / STAGE_H) * 100}%) scale(${zoom})` } : undefined;
+  const view = `0 0 ${STAGE_W} ${STAGE_H}`;
 
   return (
-    <svg viewBox={`0 0 ${STAGE_W} ${STAGE_H}`} className="stage" role="img" aria-label={scene.title}>
-      <defs>
-        <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M0,0 L10,5 L0,10 z" fill="context-stroke" />
-        </marker>
-        <filter id="soft-glow" x="-100%" y="-100%" width="300%" height="300%">
-          <feGaussianBlur stdDeviation="10" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-        {glowing.map((o) => (
-          <radialGradient key={o.id} id={`glow-${o.id}`}>
-            <stop offset="0%" stopColor="#FFF8E6" />
-            <stop offset="45%" stopColor={o.fill ?? "#FDB813"} />
-            <stop offset="100%" stopColor={o.fill ?? "#FDB813"} />
-          </radialGradient>
-        ))}
-      </defs>
-      <rect width={STAGE_W} height={STAGE_H} fill={scene.background ?? "#0f172a"} />
-      {scene.stars && STARS.map((s, i) => <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#fff" opacity={s.o} />)}
-      {frame.map(renderObject)}
-      {highlights.map((h) => {
-        const o = byId.get(h.id);
-        return o ? ring(o, h.colour) : null;
-      })}
-    </svg>
+    <div className="stage" role="img" aria-label={scene.title}>
+      <svg viewBox={view} className="stage-layer backdrop" style={camCss(1.08 + (cam.zoom - 1) * 0.4, cam.x * 0.4, cam.y * 0.4)} aria-hidden>
+        <SceneBackground background={scene.background} stars={scene.stars} idPrefix={p} />
+      </svg>
+      <svg viewBox={view} className="stage-layer world" style={camCss(cam.zoom, cam.x, cam.y)} aria-hidden>
+        <defs>
+          <ObjectDefs objects={scene.objects} p={p} />
+        </defs>
+        {shadows}
+        {trails}
+        {halos}
+        {frame.map((o) => drawObject(o, p))}
+        {highlights.map((h) => {
+          const o = byId.get(h.id);
+          return o ? ring(o, h.colour) : null;
+        })}
+      </svg>
+      {scene.particles && (
+        <svg viewBox={view} className="stage-layer weather" aria-hidden>
+          <SceneParticles kind={scene.particles} />
+        </svg>
+      )}
+    </div>
   );
 }

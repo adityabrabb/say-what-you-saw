@@ -23,7 +23,11 @@ Built for the Hacker House Goa 2026 × Wispr Flow challenge, and built **entirel
 5. **Reveal:** your scene sits next to the original. Objects you missed get pulsing red rings, and things you invented get yellow ones. The score counts up, each category bar fills, and you get a one-line verdict ("Photographic memory. Are you a camera?" … "The scene is filing a missing persons report.").
 6. A running total across rounds, plus a best score per difficulty and round count saved in your browser.
 
-There are 11 hand-made targets: a traffic light, a snowman, three stars and an arrow, a square sliding across, a ball in orbit, a circle fading out, and more.
+Targets get harder as the difficulty goes up:
+
+- **Easy:** 11 simple shape scenes (a traffic light, a snowman, three stars and an arrow, a sliding square…).
+- **Medium:** 8 illustrated scenes with backdrops and motion (a dog chasing a football in the park, a rocket leaving Earth, fish swimming under a sailboat…).
+- **Hard:** 8 busy scenes with 6–9 objects, weather, camera moves and staggered entrances (a ship in a thunderstorm, rush hour in the rain, a neon arcade, a birthday party…), all in a 2-second flash.
 
 ### Studio (the creator)
 
@@ -59,6 +63,18 @@ Objects you didn't mention count as zero in every category, so "a red circle" on
 
 ---
 
+## What scenes can do
+
+Scenes are JSON, and both the hand-made targets and the AI-generated ones use the same features:
+
+- **Shapes and icons:** circles, rectangles, stars, text and arrows, plus **184 illustrated Fluent Emoji icons** (animals, vehicles, food, weather, planets, buildings, objects…).
+- **Backdrops:** deep space with twinkling stars, a daytime sky with drifting clouds, a sunset ocean with rolling waves, a night city with lit windows, and a neon synthwave grid.
+- **Weather particles:** sparkle, rain, snow.
+- **Motion:** move, fade, grow and orbit with easing (`back`, `bounce`, `elastic`…), motion trails on anything that moves, staggered pop-in entrances, and a slow camera zoom and pan with parallax.
+- **Look:** gradient-shaded shapes, soft glows and contact shadows.
+
+**Performance:** every glow and shadow is a gradient, not a blur filter. Backdrops, particles and twinkles are animated by CSS alone. The stage is split into three GPU layers (backdrop, objects, weather), so a moving object never forces the backdrop to redraw, and the camera is a pure CSS transform. Heavy scenes hold 120–145 fps in Chrome.
+
 ## Tech stack
 
 - **Next.js 16** (App Router) + **React 19** + **TypeScript**
@@ -69,6 +85,7 @@ Objects you didn't mention count as zero in every category, so "a red circle" on
 - **three.js** for the low-poly neon moon on the landing screen (loaded lazily, paused off-screen)
 - **Motion** for the countdown and score animations, **canvas-confetti** for celebrations
 - **Web Audio API** for every sound effect. All synthesised in the browser, no audio files.
+- **Fluent Emoji** icons (MIT, Microsoft) via Iconify, extracted to static SVGs by `scripts/build-icons.mjs`
 - Deployed on **Vercel**
 
 ```

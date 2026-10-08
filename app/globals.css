@@ -162,10 +162,15 @@ main { max-width: 1000px; margin: 0 auto; padding: 28px 16px 80px; }
 
 /* The scene screen: a monitor set inside the cabinet */
 .stage {
-  width: 100%; display: block; border-radius: 12px;
-  border: 3px solid #000;
-  box-shadow: 0 0 0 2px var(--cyan), 0 0 22px rgba(0, 240, 255, 0.45), inset 0 0 30px #000;
+  position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 12px;
+  border: 3px solid #000; background: #10162a;
+  box-shadow: 0 0 0 2px var(--cyan), 0 0 22px rgba(0, 240, 255, 0.45);
+  contain: layout paint;
 }
+/* Each layer is its own GPU layer: object motion never repaints the backdrop, and the camera is a pure transform. */
+.stage-layer { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transform-origin: 50% 50%; }
+.stage-layer.backdrop, .stage-layer.world, .stage-layer.weather { will-change: transform; }
+.stage-layer.weather { pointer-events: none; }
 
 /* ---------- Text boxes: green-phosphor terminal ---------- */
 textarea, .edit-input {
@@ -416,4 +421,42 @@ textarea:focus, .edit-input:focus {
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}
+
+/* ---------- Scene backdrops & particles (CSS-driven so they never re-render) ---------- */
+.bg-twinkle { animation: bg-twinkle 3s ease-in-out infinite alternate; }
+@keyframes bg-twinkle { from { opacity: 0.15; } to { opacity: 1; } }
+.bg-drift { animation: bg-drift 18s ease-in-out infinite alternate; }
+.bg-drift.slow { animation-duration: 26s; }
+@keyframes bg-drift { to { transform: translate(30px, -12px); } }
+.bg-cloud { animation: bg-cloud 40s linear infinite alternate; }
+.bg-cloud.slow { animation-duration: 55s; }
+.bg-cloud.slower { animation-duration: 70s; animation-direction: alternate-reverse; }
+@keyframes bg-cloud { from { transform: translateX(-60px); } to { transform: translateX(90px); } }
+.bg-wave { animation: bg-wave 6s linear infinite; }
+.bg-wave.slow { animation-duration: 9s; }
+.bg-wave.slower { animation-duration: 13s; }
+.bg-wave.reverse { animation-direction: reverse; }
+@keyframes bg-wave { to { transform: translateX(160px); } }
+.bg-wave.slow { animation-name: bg-wave-220; }
+.bg-wave.slower { animation-name: bg-wave-260; }
+@keyframes bg-wave-220 { to { transform: translateX(220px); } }
+@keyframes bg-wave-260 { to { transform: translateX(260px); } }
+.bg-pulse { animation: bg-pulse 4s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+@keyframes bg-pulse { to { opacity: 0.85; transform: scale(1.03); } }
+
+.fx-rain { animation: fx-rain 0.8s linear infinite; }
+@keyframes fx-rain { from { transform: translate(0, 0); } to { transform: translate(-40px, 520px); } }
+.fx-snow { animation: fx-snow 9s linear infinite; }
+@keyframes fx-snow {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(14px, 120px); }
+  50% { transform: translate(-10px, 240px); }
+  75% { transform: translate(12px, 360px); }
+  100% { transform: translate(0, 480px); }
+}
+.fx-sparkle { animation: fx-sparkle 2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes fx-sparkle {
+  0%, 100% { opacity: 0; transform: scale(0.2) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(45deg); }
 }

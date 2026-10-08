@@ -1,4 +1,5 @@
 import { computeFrame, type FrameObject } from "./engine";
+import { ICON_GROUPS } from "./icons";
 import type { Animation, ObjectType, Scene } from "./scene";
 
 // Deterministic Recall scoring: greedy object matching, then five categories worth 20 points each.
@@ -103,6 +104,8 @@ function sizeOf(o: FrameObject): number {
       return Math.sqrt((o.w ?? 60) * (o.h ?? 40)) * s;
     case "text":
       return (o.fontSize ?? 16) * s * Math.max(1, (o.text ?? "").length) * 0.6;
+    case "icon":
+      return (o.w ?? 80) * s;
     case "arrow":
       return Math.hypot((o.x2 ?? o.x + 60) - o.x, (o.y2 ?? o.y) - o.y);
   }
@@ -174,7 +177,15 @@ export function scoreScenes(target: Scene, player: Scene): ScoreResult {
   for (const t of T)
     for (const p of P) {
       if (!canMatch(t.type, p.type)) continue;
-      const colour = colourSimilarity(tColour.get(t.id)!, pColour.get(p.id)!);
+      // Icons have no fill colour; compare what they depict instead.
+      const colour =
+        t.type === "icon"
+          ? t.icon === p.icon
+            ? 1
+            : ICON_GROUPS[t.icon ?? ""] && ICON_GROUPS[t.icon ?? ""] === ICON_GROUPS[p.icon ?? ""]
+              ? 0.6
+              : 0
+          : colourSimilarity(tColour.get(t.id)!, pColour.get(p.id)!);
       if (t.type !== p.type && colour < 1) continue;
       candidates.push({ t, p, type: t.type === p.type ? 1 : 0, colour, dist: Math.hypot(t.x - p.x, t.y - p.y) });
     }

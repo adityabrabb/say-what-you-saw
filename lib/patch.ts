@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { animation, checkScene, clampToStage, point, sceneObject, scenesResponse } from "./schema";
-import type { Animation, Scene, SceneObject, Video } from "./scene";
+import { animation, checkScene, clampToStage, ease, point, sceneObject, scenesResponse } from "./schema";
+import { PARTICLES, type Animation, type Scene, type SceneObject, type Video } from "./scene";
 
 // A voice edit is a small list of operations against the existing video, never a rewrite.
 
@@ -17,6 +17,7 @@ const animationChanges = z
     radius: z.number().positive(),
     turns: z.number(),
     startAngle: z.number(),
+    ease,
   })
   .partial();
 const sceneChanges = z
@@ -25,6 +26,10 @@ const sceneChanges = z
     duration: z.number().positive().max(60),
     background: z.string(),
     stars: z.boolean(),
+    particles: z.enum(PARTICLES),
+    camera: z.object({ zoom: z.number().min(0.5).max(2).optional(), panX: z.number().optional(), panY: z.number().optional() }),
+    entrance: z.enum(["stagger", "none"]),
+    glow: z.boolean(),
     caption: z.string(),
   })
   .partial();
