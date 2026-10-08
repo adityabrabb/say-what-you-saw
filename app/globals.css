@@ -1,0 +1,62 @@
+:root {
+  --bg: #0b0f1a;
+  --panel: #141a2a;
+  --line: #26304a;
+  --text: #e8ecf4;
+  --muted: #8a95ad;
+  --accent: #fdb813;
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-stage: ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+header h1 { margin: 0; font-size: 28px; letter-spacing: -0.02em; }
+header p { margin: 4px 0 20px; color: var(--muted); }
+
+.player {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.stage { width: 100%; display: block; border-radius: 10px; }
+
+.caption { margin: 12px 4px 0; color: var(--muted); font-size: 15px; }
+
+.controls { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+
+.play {
+  width: 40px; height: 40px; flex: none;
+  border: none; border-radius: 50%;
+  background: var(--accent); color: #1a1300;
+  font-size: 14px; cursor: pointer;
+}
+
+.scrubber { position: relative; flex: 1; }
+.scrubber input { width: 100%; accent-color: var(--accent); cursor: pointer; }
+.ticks span { position: absolute; top: -2px; width: 2px; height: 6px; background: var(--muted); }
+
+.time { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; flex: none; }
+
+.scenes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chip {
+  background: transparent; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 12px; font-size: 13px; cursor: pointer;
+}
+.chip.active { color: var(--text); border-color: var(--accent); }
