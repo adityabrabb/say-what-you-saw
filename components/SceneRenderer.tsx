@@ -7,7 +7,9 @@ const STARS = Array.from({ length: 70 }, (_, i) => {
     const s = Math.sin(i * 12.9898 + n * 78.233) * 43758.5453;
     return s - Math.floor(s);
   };
-  return { x: r(1) * STAGE_W, y: r(2) * STAGE_H, r: 0.4 + r(3) * 1.1, o: 0.25 + r(4) * 0.6 };
+  // Rounded so server and browser floating-point agree during hydration.
+  const q = (v: number) => Math.round(v * 100) / 100;
+  return { x: q(r(1) * STAGE_W), y: q(r(2) * STAGE_H), r: q(0.4 + r(3) * 1.1), o: q(0.25 + r(4) * 0.6) };
 });
 
 function renderObject(o: FrameObject) {

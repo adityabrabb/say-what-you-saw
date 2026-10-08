@@ -5,6 +5,7 @@ import Player from "./Player";
 import { requestEdit, requestScenes } from "@/lib/api";
 import { solarSystem } from "@/lib/examples";
 import type { Video } from "@/lib/scene";
+import { sfx } from "@/lib/sound";
 
 interface HistoryEntry {
   instruction: string;
@@ -42,9 +43,11 @@ export default function Studio() {
     try {
       const scenes = await requestScenes(text, "studio");
       show({ title: text, scenes }, 0);
+      sfx.magic();
       setHistory([]); // edits belong to the previous video
     } catch (err) {
       setError(err instanceof Error ? err.message : "Generation failed");
+      sfx.error();
     } finally {
       setLoading(false);
     }
@@ -63,8 +66,10 @@ export default function Studio() {
       ]);
       setInstruction("");
       show(result.video, result.scenes[0] ?? currentScene);
+      sfx.magic();
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Edit failed");
+      sfx.error();
     } finally {
       setEditing(false);
     }
@@ -75,6 +80,7 @@ export default function Studio() {
     if (!last) return;
     setHistory(rest);
     show(last.before, last.beforeScene);
+    sfx.back();
   };
 
   return (
@@ -116,7 +122,7 @@ export default function Studio() {
           <button className="primary" onClick={edit} disabled={editing || !instruction.trim()}>
             {editing ? "Editing…" : "Apply"}
           </button>
-          <button className="ghost" onClick={undo} disabled={history.length === 0 || editing}>
+          <button className="ghost" data-nosfx onClick={undo} disabled={history.length === 0 || editing}>
             Undo
           </button>
         </div>

@@ -1,7 +1,10 @@
 "use client";
 
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import SceneRenderer from "./SceneRenderer";
+import { celebrate } from "@/lib/confetti";
+import { scoreSound, sfx } from "@/lib/sound";
 import { requestScenes } from "@/lib/api";
 import { DESCRIBE_SECONDS, DIFFICULTIES, recallPool, type Difficulty } from "@/lib/recallPool";
 import { CATEGORY_LABELS, POINTS_PER_CATEGORY, scoreScenes, verdictFor, type Category, type ScoreResult } from "@/lib/score";
@@ -17,7 +20,8 @@ interface RoundResult {
   error: string;
 }
 
-const READY_SECONDS = 3;
+const READY_SECONDS = 3.7; // 3, 2, 1, then a beat of "LOOK!"
+const LOOK_BEAT = 0.7;
 const ROUND_OPTIONS = [3, 5] as const;
 const MISSED_COLOUR = "#E5484D";
 const EXTRA_COLOUR = "#F5C518";
@@ -76,14 +80,38 @@ function ScoreBreakdown({ score, seed }: { score: ScoreResult; seed: number }) {
     const id = requestAnimationFrame(() => setFilled(true));
     return () => cancelAnimationFrame(id);
   }, []);
+  useEffect(() => {
+    if (total > 0 && total < score.total && total % 2 === 0) sfx.scoreTick();
+  }, [total, score.total]);
+  useEffect(() => {
+    const id = setTimeout(() => {
+      scoreSound(score.total);
+      if (score.total >= 80) celebrate(score.total >= 95);
+    }, 1250);
+    return () => clearTimeout(id);
+  }, [score.total]);
 
   return (
     <div className="breakdown">
       <div className="total-score">
-        <span className="total-number">{total}</span>
+        <motion.span
+          className={`total-number ${score.total >= 80 ? "hot" : score.total < 25 ? "cold" : ""}`}
+          initial={{ scale: 0.4, opacity: 0 }}
+          animate={{ scale: [0.4, 1.15, 1], opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          {total}
+        </motion.span>
         <span className="total-of">/ 100</span>
       </div>
-      <p className="verdict">{verdictFor(score.total, seed)}</p>
+      <motion.p
+        className="verdict"
+        initial={{ opacity: 0, scale: 2.2, rotate: -6 }}
+        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+        transition={{ delay: 1.25, type: "spring", stiffness: 300, damping: 14 }}
+      >
+        {verdictFor(score.total, seed)}
+      </motion.p>
       <div className="categories">
         {(Object.keys(CATEGORY_LABELS) as Category[]).map((c, i) => (
           <div key={c} className="cat">
@@ -106,8 +134,21 @@ function ScoreBreakdown({ score, seed }: { score: ScoreResult; seed: number }) {
   );
 }
 
-function FinalTotal({ total }: { total: number }) {
-  return <>{useCountUp(total, 1600)}</>;
+function FinalTotal({ total, celebrateIt }: { total: number; celebrateIt: boolean }) {
+  const shown = useCountUp(total, 1600);
+  useEffect(() => {
+    if (shown > 0 && shown < total && shown % 5 === 0) sfx.scoreTick();
+  }, [shown, total]);
+  useEffect(() => {
+    const id = setTimeout(() => {
+      if (celebrateIt) {
+        sfx.great();
+        celebrate(true);
+      } else sfx.good();
+    }, 1650);
+    return () => clearTimeout(id);
+  }, [celebrateIt]);
+  return <>{shown}</>;
 }
 
 export default function RecallGame() {
@@ -191,6 +232,19 @@ export default function RecallGame() {
     setPhase("final");
   };
 
+  // Sound cues: a beep per countdown number, ticks while describing, alarms in the last 5 seconds.
+  const beat =
+    phase === "ready" ? (remaining > LOOK_BEAT ? Math.ceil(remaining - LOOK_BEAT) : 0) : phase === "describe" ? Math.ceil(remaining) : -1;
+  useEffect(() => {
+    if (phase === "ready") beat > 0 ? sfx.count() : sfx.go();
+    else if (phase === "describe" && beat < DESCRIBE_SECONDS) beat <= 5 ? sfx.urgent() : sfx.tick();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [beat, phase]);
+  useEffect(() => {
+    if (phase === "flash") sfx.flash();
+    if (phase === "result") sfx.submit();
+  }, [phase]);
+
   // Drive the clock during timed phases and advance when each one runs out.
   useEffect(() => {
     if (phaseLength === 0) return;
@@ -257,10 +311,19 @@ export default function RecallGame() {
     return (
       <>
         {hud}
-        <div className="recall-card center">
-          <div className="big-count" key={Math.ceil(remaining)}>
-            {Math.ceil(remaining)}
-          </div>
+        <div className="recall-card center ready-card">
+          <AnimatePresence mode="popLayout">
+            <motion.div
+              key={beat}
+              className={beat > 0 ? "big-count" : "big-count look"}
+              initial={{ scale: 3, opacity: 0, rotate: beat > 0 ? -12 : 0 }}
+              animate={{ scale: 1, opacity: 1, rotate: 0 }}
+              exit={{ scale: 0.3, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 400, damping: 18 }}
+            >
+              {beat > 0 ? beat : "LOOK!"}
+            </motion.div>
+          </AnimatePresence>
           <p className="muted">Get ready to look…</p>
         </div>
       </>
@@ -287,10 +350,18 @@ export default function RecallGame() {
     return (
       <>
         {hud}
-        <div className="recall-card">
+        <div className={secs <= 5 ? "recall-card shake" : "recall-card"}>
           <div className="describe-head">
             <h2>What did you see?</h2>
-            <div className={secs <= 5 ? "timer urgent" : "timer"}>{secs}</div>
+            <motion.div
+              key={secs}
+              className={secs <= 5 ? "timer urgent" : "timer"}
+              initial={{ scale: secs <= 5 ? 1.6 : 1.25 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 500, damping: 15 }}
+            >
+              {secs}
+            </motion.div>
           </div>
           <div className="timer-bar">
             <span style={{ width: `${(remaining / DESCRIBE_SECONDS) * 100}%` }} />
@@ -398,7 +469,7 @@ export default function RecallGame() {
         <p className="label">Final score</p>
         <div className="total-score">
           <span className="total-number">
-            <FinalTotal total={runningTotal} />
+            <FinalTotal total={runningTotal} celebrateIt={newBest} />
           </span>
           <span className="total-of">/ {max}</span>
         </div>
