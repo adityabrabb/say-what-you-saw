@@ -81,7 +81,7 @@ const NEIGHBOURS: [ColourName, ColourName][] = [
 
 function colourSimilarity(a: string, b: string): number {
   if (a === b) return 1;
-  return NEIGHBOURS.some(([x, y]) => (x === a && y === b) || (x === b && y === a)) ? 0.5 : 0;
+  return NEIGHBOURS.some(([x, y]) => (x === a && y === b) || (x === b && y === a)) ? 0.4 : 0;
 }
 
 // ---------- Geometry ----------
@@ -168,49 +168,53 @@ export function scoreScenes(target: Scene, player: Scene): ScoreResult {
   const pColour = new Map(P.map((o) => [o.id, colourName(fillOf(o))]));
 
   // Greedy matching: best type, then colour, then closest position.
+  // A different shape only counts as the same object if the colour is exactly right,
+  // so a pink star can't pass itself off as a red circle.
   const candidates: { t: FrameObject; p: FrameObject; type: number; colour: number; dist: number }[] = [];
   for (const t of T)
-    for (const p of P)
-      if (canMatch(t.type, p.type))
-        candidates.push({
-          t,
-          p,
-          type: t.type === p.type ? 1 : 0,
-          colour: colourSimilarity(tColour.get(t.id)!, pColour.get(p.id)!),
-          dist: Math.hypot(t.x - p.x, t.y - p.y),
-        });
+    for (const p of P) {
+      if (!canMatch(t.type, p.type)) continue;
+      const colour = colourSimilarity(tColour.get(t.id)!, pColour.get(p.id)!);
+      if (t.type !== p.type && colour < 1) continue;
+      candidates.push({ t, p, type: t.type === p.type ? 1 : 0, colour, dist: Math.hypot(t.x - p.x, t.y - p.y) });
+    }
   candidates.sort((a, b) => b.type - a.type || b.colour - a.colour || a.dist - b.dist);
 
   const usedT = new Set<string>();
   const usedP = new Set<string>();
-  const pairs: typeof candidates = [];
+  const pairs: (typeof candidates[number] & { weight: number })[] = [];
   for (const c of candidates) {
     if (usedT.has(c.t.id) || usedP.has(c.p.id)) continue;
     usedT.add(c.t.id);
     usedP.add(c.p.id);
-    pairs.push(c);
+    // How confident we are this is "the same object": right shape and right colour = 1.
+    const typeFactor = c.type ? 1 : 0.6;
+    pairs.push({ ...c, weight: typeFactor * (0.25 + 0.75 * c.colour) });
   }
 
-  const coverage = T.length ? pairs.length / T.length : 0;
   const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+  // Sum of per-target-object credit, divided by how many objects the target has. Misses count as 0.
+  const perTarget = (xs: number[]) => (T.length ? xs.reduce((a, b) => a + b, 0) / T.length : 0);
+  const quality = perTarget(pairs.map((c) => c.weight));
 
-  // Objects & count: F1 of same-type matches, so both misses and extras cost points.
-  const sameType = pairs.filter((c) => c.type === 1).length + pairs.filter((c) => c.type === 0).length * 0.5;
-  const objects = T.length + P.length ? (2 * sameType) / (T.length + P.length) : 1;
+  // Objects & count: F1 of matches, so both misses and extras cost points.
+  // Right shape in the wrong colour is only half-remembered.
+  const typeCredit = pairs.reduce((sum, c) => sum + (c.type ? 0.5 + 0.5 * c.colour : 0.3), 0);
+  const objects = T.length + P.length ? (2 * typeCredit) / (T.length + P.length) : 1;
 
-  const colour = avg(pairs.map((c) => c.colour)) * coverage;
+  const colour = perTarget(pairs.map((c) => c.colour * (c.type ? 1 : 0.6)));
 
-  const size = avg(
+  const size = perTarget(
     pairs.map((c) => {
       const a = sizeOf(c.t);
       const b = sizeOf(c.p);
       const ratio = Math.min(a, b) / Math.max(a, b, 1);
-      return Math.min(1, ratio / 0.8); // within 20% is full marks
+      return Math.min(1, ratio / 0.85) ** 2 * c.weight; // within 15% is full marks
     })
-  ) * coverage;
+  );
 
   // Position: mostly "is A above/left of B" agreement, a little absolute placement.
-  const absolute = avg(pairs.map((c) => 1 - Math.min(1, c.dist / 350)));
+  const absolute = avg(pairs.map((c) => 1 - Math.min(1, c.dist / 300)));
   let relative = absolute;
   if (pairs.length >= 2) {
     const agreements: number[] = [];
@@ -223,7 +227,7 @@ export function scoreScenes(target: Scene, player: Scene): ScoreResult {
       }
     relative = 0.75 * avg(agreements) + 0.25 * absolute;
   }
-  const position = relative * coverage;
+  const position = relative * quality;
 
   // Motion: judged on every target object that moves, plus matched ones the player made move.
   const pairByT = new Map(pairs.map((c) => [c.t.id, c]));
@@ -236,10 +240,10 @@ export function scoreScenes(target: Scene, player: Scene): ScoreResult {
       continue;
     }
     const pm = motionOf(player, pair.p);
-    if (tm.kinds.size || pm.kinds.size) motionScores.push(motionSimilarity(tm, pm));
+    if (tm.kinds.size || pm.kinds.size) motionScores.push(motionSimilarity(tm, pm) * pair.weight);
   }
-  // A static scene described as static earns motion points only for the objects actually recalled.
-  const motion = motionScores.length ? avg(motionScores) : coverage;
+  // A still scene earns motion points only for objects genuinely recalled.
+  const motion = motionScores.length ? avg(motionScores) : quality;
 
   const pts = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * POINTS_PER_CATEGORY);
   const categories: Record<Category, number> = {
