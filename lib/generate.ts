@@ -10,7 +10,7 @@ const MAX_TOKENS: Record<"recall" | "studio", number> = { recall: 4000, studio: 
 
 export type GenerateMode = "recall" | "studio";
 
-const SYSTEM_PROMPT = `You turn a spoken description into an animated SVG scene. Reply with JSON only, no prose, no markdown fences.
+export const SYSTEM_PROMPT = `You turn a spoken description into an animated SVG scene. Reply with JSON only, no prose, no markdown fences.
 
 Output shape: {"scenes": [Scene, ...]}
 
@@ -43,7 +43,7 @@ const MODE_RULES: Record<GenerateMode, string> = {
   studio: `This is an explainer video. Break the explanation into 1-4 scenes, each 6-14 seconds. Introduce objects one by one with fades/grows, add short text labels and a title, and use motion to show what is happening. Give each scene a one-sentence caption.`,
 };
 
-type Message = { role: "system" | "user" | "assistant"; content: string };
+export type Message = { role: "system" | "user" | "assistant"; content: string };
 
 async function callModel(messages: Message[], maxTokens: number): Promise<string> {
   const key = process.env.OPENROUTER_API_KEY || process.env.api_openrouter_API_key;
@@ -79,30 +79,40 @@ function extractJson(text: string): unknown {
   return JSON.parse(text.slice(start, end + 1));
 }
 
-// Ask the model for scenes, validate, and on failure retry with the error fed back.
-export async function generateScenes(description: string, mode: GenerateMode): Promise<Scene[]> {
-  const messages: Message[] = [
-    { role: "system", content: `${SYSTEM_PROMPT}\n\n${MODE_RULES[mode]}` },
-    { role: "user", content: description },
-  ];
-
+// Call the model, run `accept` on the parsed JSON, and on failure retry with the error fed back.
+export async function askWithRetries<T>(messages: Message[], maxTokens: number, accept: (json: unknown) => T): Promise<T> {
   let lastError = "";
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const reply = await callModel(messages, MAX_TOKENS[mode]);
+    const reply = await callModel(messages, maxTokens);
     try {
-      const parsed = scenesResponse.safeParse(extractJson(reply));
-      if (!parsed.success) throw new Error(z.prettifyError(parsed.error));
-      const scenes = parsed.data.scenes as Scene[];
-      const problems = scenes.flatMap(checkScene);
-      if (problems.length) throw new Error(problems.join("; "));
-      return scenes.map(clampToStage);
+      return accept(extractJson(reply));
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
       messages.push(
         { role: "assistant", content: reply },
-        { role: "user", content: `That JSON was invalid:\n${lastError}\nReturn the corrected full JSON only.` }
+        { role: "user", content: `That JSON was invalid:
+${lastError}
+Return the corrected full JSON only.` }
       );
     }
   }
   throw new Error(`Model output failed validation after ${MAX_ATTEMPTS} attempts: ${lastError}`);
+}
+
+// Ask the model for scenes and validate them.
+export async function generateScenes(description: string, mode: GenerateMode): Promise<Scene[]> {
+  const messages: Message[] = [
+    { role: "system", content: `${SYSTEM_PROMPT}
+
+${MODE_RULES[mode]}` },
+    { role: "user", content: description },
+  ];
+  return askWithRetries(messages, MAX_TOKENS[mode], (json) => {
+    const parsed = scenesResponse.safeParse(json);
+    if (!parsed.success) throw new Error(z.prettifyError(parsed.error));
+    const scenes = parsed.data.scenes as Scene[];
+    const problems = scenes.flatMap(checkScene);
+    if (problems.length) throw new Error(problems.join("; "));
+    return scenes.map(clampToStage);
+  });
 }

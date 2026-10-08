@@ -2,9 +2,9 @@ import { z } from "zod";
 import { STAGE_H, STAGE_W, type Scene } from "./scene";
 
 // Runtime validation for LLM output. Mirrors the types in scene.ts.
-const point = z.object({ x: z.number(), y: z.number() });
+export const point = z.object({ x: z.number(), y: z.number() });
 
-const sceneObject = z.object({
+export const sceneObject = z.object({
   id: z.string().min(1),
   type: z.enum(["circle", "rect", "star", "text", "arrow", "image"]),
   x: z.number(),
@@ -29,7 +29,7 @@ const sceneObject = z.object({
 
 const timing = { target: z.string(), start: z.number().min(0), duration: z.number().min(0) };
 
-const animation = z.discriminatedUnion("action", [
+export const animation = z.discriminatedUnion("action", [
   z.object({ ...timing, action: z.literal("move"), to: point }),
   z.object({ ...timing, action: z.literal("fade"), to: z.number().min(0).max(1) }),
   z.object({ ...timing, action: z.literal("grow"), to: z.number().positive() }),

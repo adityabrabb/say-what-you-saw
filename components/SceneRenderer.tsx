@@ -147,9 +147,9 @@ export default function SceneRenderer({ scene, time, highlights = [] }: { scene:
         </filter>
         {glowing.map((o) => (
           <radialGradient key={o.id} id={`glow-${o.id}`}>
-            <stop offset="0%" stopColor="#FFF6D5" />
-            <stop offset="55%" stopColor={o.fill ?? "#FDB813"} />
-            <stop offset="100%" stopColor="#F28C28" />
+            <stop offset="0%" stopColor="#FFF8E6" />
+            <stop offset="45%" stopColor={o.fill ?? "#FDB813"} />
+            <stop offset="100%" stopColor={o.fill ?? "#FDB813"} />
           </radialGradient>
         ))}
       </defs>

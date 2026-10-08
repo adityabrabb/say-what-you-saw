@@ -7,10 +7,16 @@ import type { Video } from "@/lib/scene";
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
 
-export default function Player({ video }: { video: Video }) {
+interface PlayerProps {
+  video: Video;
+  startScene?: number; // begin playback at this scene (e.g. the one just edited)
+  onSceneChange?: (index: number) => void;
+}
+
+export default function Player({ video, startScene = 0, onSceneChange }: PlayerProps) {
   const durations = video.scenes.map((s) => s.duration);
   const total = durations.reduce((a, b) => a + b, 0);
-  const [time, setTime] = useState(0);
+  const [time, setTime] = useState(() => durations.slice(0, startScene).reduce((a, b) => a + b, 0));
   const [playing, setPlaying] = useState(true);
   const last = useRef<number | null>(null);
 
@@ -56,6 +62,7 @@ export default function Player({ video }: { video: Video }) {
   });
 
   const { index, local } = locate(durations, time);
+  useEffect(() => onSceneChange?.(index), [index, onSceneChange]);
   const scene = video.scenes[index];
   const sceneStarts = durations.map((_, i) => durations.slice(0, i).reduce((a, b) => a + b, 0));
 
