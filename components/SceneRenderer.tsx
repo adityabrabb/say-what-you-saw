@@ -1,7 +1,7 @@
 import { memo, useId, useMemo } from "react";
 import { SceneBackground, SceneParticles } from "./SceneBackground";
 import { cameraAt, computeFrame, type FrameObject } from "@/lib/engine";
-import { normalise, shade } from "@/lib/colour";
+import { normalise, parseColour, shade } from "@/lib/colour";
 import { ICON_GROUPS, iconUrl } from "@/lib/icons";
 import { STAGE_H, STAGE_W, type Scene, type SceneObject } from "@/lib/scene";
 
@@ -88,6 +88,12 @@ const ObjectDefs = memo(function ObjectDefs({ objects, p }: { objects: SceneObje
   );
 });
 
+// Dark text gets a light outline and vice versa, so labels read on any backdrop.
+function isDark(c: string | undefined): boolean {
+  const rgb = parseColour(c);
+  return !!rgb && 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2] < 110;
+}
+
 function shapeFill(o: FrameObject, p: string) {
   return isSolidFill(o) ? `url(#${p}f-${o.id})` : "none";
 }
@@ -132,7 +138,7 @@ function drawObject(o: FrameObject, p: string, ghost = false, key = o.id) {
           dominantBaseline="middle"
           fontFamily="var(--font-stage)"
           fontWeight={700}
-          stroke="rgba(0,0,0,0.55)"
+          stroke={isDark(o.fill) ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.55)"}
           strokeWidth={4}
           strokeLinejoin="round"
           paintOrder="stroke"
@@ -199,7 +205,17 @@ function ring(o: FrameObject, colour: string) {
   );
 }
 
-export default function SceneRenderer({ scene, time, highlights = [] }: { scene: Scene; time: number; highlights?: Highlight[] }) {
+export default function SceneRenderer({
+  scene,
+  time,
+  highlights = [],
+  still = false,
+}: {
+  scene: Scene;
+  time: number;
+  highlights?: Highlight[];
+  still?: boolean; // thumbnails: freeze CSS animations too
+}) {
   const p = useId().replace(/[^a-zA-Z0-9]/g, "") + "-";
   const frame = computeFrame(scene, time);
   const byId = new Map(frame.map((o) => [o.id, o]));
@@ -244,7 +260,7 @@ export default function SceneRenderer({ scene, time, highlights = [] }: { scene:
   const view = `0 0 ${STAGE_W} ${STAGE_H}`;
 
   return (
-    <div className="stage" role="img" aria-label={scene.title}>
+    <div className={still ? "stage still" : "stage"} role="img" aria-label={scene.title}>
       <svg viewBox={view} className="stage-layer backdrop" style={camCss(1.08 + (cam.zoom - 1) * 0.4, cam.x * 0.4, cam.y * 0.4)} aria-hidden>
         <SceneBackground background={scene.background} stars={scene.stars} idPrefix={p} />
       </svg>

@@ -289,3 +289,12 @@ export function verdictFor(score: number, seed: number): string {
   const lines = VERDICTS.find(([min]) => score >= min)![1];
   return lines[Math.abs(seed) % lines.length];
 }
+
+// Human name for an object, used to list misses on the reveal ("robot", "red circle", "text HELLO").
+export function describeObject(o: { type: string; icon?: string; fill?: string; stroke?: string; text?: string }): string {
+  if (o.type === "icon") return (o.icon ?? "thing").replace(/-/g, " ");
+  if (o.type === "text") return `“${o.text ?? ""}”`;
+  const colour = colourName(o.fill && o.fill !== "none" ? o.fill : o.stroke);
+  const shape = o.type === "rect" ? "square" : o.type;
+  return `${colour} ${shape}`;
+}

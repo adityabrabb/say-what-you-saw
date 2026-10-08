@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Player from "./Player";
 import { requestEdit, requestScenes } from "@/lib/api";
-import { solarSystem } from "@/lib/examples";
+import SceneRenderer from "./SceneRenderer";
+import { SHOWCASES } from "@/lib/showcases";
 import type { Video } from "@/lib/scene";
 import { sfx } from "@/lib/sound";
 
@@ -16,7 +17,7 @@ interface HistoryEntry {
 }
 
 export default function Studio() {
-  const [video, setVideo] = useState<Video>(solarSystem);
+  const [video, setVideo] = useState<Video>(SHOWCASES[0]);
   const [version, setVersion] = useState(0);
   const [startScene, setStartScene] = useState(0);
   const [currentScene, setCurrentScene] = useState(0);
@@ -103,8 +104,35 @@ export default function Studio() {
         </div>
       </div>
 
+      <div className="showcase-bar">
+        <span className="label">Showcase</span>
+        <div className="showcases">
+          {SHOWCASES.map((v) => (
+            <button
+              key={v.title}
+              className={v === video ? "showcase active" : "showcase"}
+              onClick={() => {
+                show(v, 0);
+                setHistory([]);
+              }}
+            >
+              <SceneRenderer scene={v.scenes[0]} time={v.scenes[0].duration * 0.75} still />
+              <span>{v.title}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <p className="muted now-playing">{video.title}</p>
-      <Player key={version} video={video} startScene={startScene} onSceneChange={setCurrentScene} />
+      <div className="player-wrap">
+        <Player key={version} video={video} startScene={startScene} onSceneChange={setCurrentScene} />
+        {loading && (
+          <div className="generating">
+            <span className="spinner" />
+            <span>Designing your scene…</span>
+          </div>
+        )}
+      </div>
 
       <div className="edit-panel">
         <p className="label">Edit by voice</p>

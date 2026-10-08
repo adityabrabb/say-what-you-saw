@@ -460,3 +460,46 @@ textarea:focus, .edit-input:focus {
   0%, 100% { opacity: 0; transform: scale(0.2) rotate(0deg); }
   50% { opacity: 1; transform: scale(1) rotate(45deg); }
 }
+
+/* ---------- Showcase bar, generating overlay, tutorial ---------- */
+.stage.still * { animation-play-state: paused !important; }
+.showcase-bar { margin: 0 0 18px; }
+.showcases { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.showcase {
+  display: flex; flex-direction: column; gap: 8px; padding: 8px; cursor: pointer; text-align: left;
+  background: #07001a; color: var(--text); border: 2px solid var(--line); border-radius: 14px;
+  font-family: var(--font-ui); font-weight: 600; font-size: 14px;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.showcase .stage { border-width: 2px; box-shadow: none; border-radius: 9px; }
+.showcase:hover { transform: translateY(-3px); border-color: var(--cyan); }
+.showcase.active { border-color: var(--green); box-shadow: 0 0 18px rgba(57, 255, 20, 0.4); }
+.player-wrap { position: relative; }
+.generating {
+  position: absolute; inset: 0; z-index: 2; border-radius: 18px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  background: rgba(8, 0, 20, 0.72); font-family: var(--font-head); font-size: 12px; color: var(--green);
+  text-shadow: var(--glow-green); animation: fade-in 0.3s ease-out;
+}
+.tutorial-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.tutorial-head h2 { margin: 0; }
+.dots { display: flex; gap: 8px; }
+.dot-btn { width: 12px; height: 12px; padding: 0; border-radius: 50%; border: 2px solid var(--line); background: transparent; cursor: pointer; }
+.dot-btn.active { background: var(--green); border-color: var(--green); box-shadow: 0 0 10px var(--green); }
+.tutorial-step { display: grid; grid-template-columns: 1fr 1.3fr; gap: 24px; align-items: center; margin-top: 18px; min-height: 260px; }
+.step-title { font-family: var(--font-head); font-weight: 400; font-size: 18px; color: var(--pink); text-shadow: var(--glow-pink); margin: 0 0 14px; }
+.step-text { font-size: 17px; line-height: 1.6; margin: 0; }
+.demo { min-width: 0; }
+.demo-terminal {
+  min-height: 130px; padding: 14px 16px; border-radius: 12px; background: #04000c; border: 2px solid var(--green);
+  color: var(--green); font-size: 18px; line-height: 1.5; text-shadow: 0 0 6px rgba(57, 255, 20, 0.7);
+}
+.caret { display: inline-block; width: 9px; height: 1.1em; margin-left: 2px; vertical-align: text-bottom; background: var(--green); animation: blink 0.9s steps(1) infinite; }
+.timer.small { font-size: 32px; }
+.demo-fill { animation: demo-fill 2.4s cubic-bezier(0.2, 0.8, 0.2, 1) infinite; transform-origin: left; }
+@keyframes demo-fill { 0% { transform: scaleX(0); } 45%, 100% { transform: scaleX(1); } }
+@media (max-width: 720px) {
+  .tutorial-step { grid-template-columns: 1fr; }
+  .showcases { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .showcase span { font-size: 12px; }
+}

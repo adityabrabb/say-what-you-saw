@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { snapIcons } from "./iconMatch";
 import { animation, checkScene, clampToStage, ease, point, sceneObject, scenesResponse } from "./schema";
 import { PARTICLES, type Animation, type Scene, type SceneObject, type Video } from "./scene";
 
@@ -132,6 +133,15 @@ export function applyPatch(video: Video, patch: Patch): { video: Video; changes:
         Object.assign(s, o.set);
         break;
       }
+    }
+  }
+
+  // Snap any invented icon names to the closest listed icon before validating.
+  for (let i = 0; i < scenes.length; i++) {
+    const snapped = snapIcons(scenes[i]);
+    if (snapped.swaps.length) {
+      scenes[i] = snapped.scene;
+      changes.push(...snapped.swaps.map((sw) => `icon ${sw}`));
     }
   }
 

@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import HowToPlay from "./HowToPlay";
 import SceneRenderer from "./SceneRenderer";
 import { celebrate } from "@/lib/confetti";
 import { flash, shake } from "@/lib/fx";
@@ -9,7 +10,7 @@ import { scoreSound, sfx } from "@/lib/sound";
 import { requestScenes } from "@/lib/api";
 import { iconUrl } from "@/lib/icons";
 import { DESCRIBE_SECONDS, DIFFICULTIES, poolFor, type Difficulty } from "@/lib/recallPool";
-import { CATEGORY_LABELS, POINTS_PER_CATEGORY, scoreScenes, verdictFor, type Category, type ScoreResult } from "@/lib/score";
+import { CATEGORY_LABELS, describeObject, POINTS_PER_CATEGORY, scoreScenes, verdictFor, type Category, type ScoreResult } from "@/lib/score";
 import type { Scene } from "@/lib/scene";
 
 type Phase = "pick" | "ready" | "flash" | "describe" | "result" | "final";
@@ -189,12 +190,28 @@ export default function RecallGame() {
   const [now, setNow] = useState(0);
   const [best, setBest] = useState(0);
   const [newBest, setNewBest] = useState(false);
+  const [tutorial, setTutorial] = useState(false);
   const seen = useRef(new Set<string>());
   const gameId = useRef(0);
   const descriptionRef = useRef(description);
   descriptionRef.current = description;
 
   useEffect(() => setBest(readBest(rounds, difficulty)), [rounds, difficulty]);
+
+  // First visit: show How to Play before the first game.
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem("swys-tutorial-seen")) setTutorial(true);
+    } catch {
+      setTutorial(true);
+    }
+  }, []);
+  const closeTutorial = () => {
+    setTutorial(false);
+    try {
+      localStorage.setItem("swys-tutorial-seen", "1");
+    } catch {}
+  };
 
   const current = results[results.length - 1];
   const roundNumber = results.length;
@@ -317,6 +334,18 @@ export default function RecallGame() {
     </div>
   );
 
+  if (phase === "pick" && tutorial) {
+    return (
+      <HowToPlay
+        onClose={closeTutorial}
+        onStart={() => {
+          closeTutorial();
+          startGame();
+        }}
+      />
+    );
+  }
+
   if (phase === "pick") {
     return (
       <div className="recall-card center">
@@ -341,9 +370,14 @@ export default function RecallGame() {
           ))}
         </div>
         <p className="muted best">Best: {best > 0 ? `${best} / ${rounds * 100}` : "none yet"}</p>
-        <button className="primary" onClick={startGame}>
-          Start
-        </button>
+        <div className="row-end centered">
+          <button className="ghost" onClick={() => setTutorial(true)}>
+            How to play
+          </button>
+          <button className="primary" onClick={startGame}>
+            Start
+          </button>
+        </div>
       </div>
     );
   }
@@ -411,7 +445,10 @@ export default function RecallGame() {
             autoFocus
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Shapes, colours, where things were, how they moved…"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) submit();
+            }}
+            placeholder="Things, colours, the backdrop, where everything was, how it moved…"
             rows={6}
           />
           <div className="row-end">
@@ -441,7 +478,12 @@ export default function RecallGame() {
               <SceneRenderer scene={target} time={5} highlights={highlightsTarget} />
               {score && score.missed.length > 0 && (
                 <p className="legend">
-                  <span className="dot" style={{ background: MISSED_COLOUR }} /> You missed {score.missed.length}
+                  <span className="dot" style={{ background: MISSED_COLOUR }} /> Missed:{" "}
+                  {score.missed
+                    .map((id) => target.objects.find((o) => o.id === id))
+                    .filter((o) => o)
+                    .map((o) => describeObject(o!))
+                    .join(", ")}
                 </p>
               )}
             </div>
@@ -456,7 +498,12 @@ export default function RecallGame() {
               )}
               {score && score.extra.length > 0 && (
                 <p className="legend">
-                  <span className="dot" style={{ background: EXTRA_COLOUR }} /> Not in the original: {score.extra.length}
+                  <span className="dot" style={{ background: EXTRA_COLOUR }} /> Not in the original:{" "}
+                  {score.extra
+                    .map((id) => generated?.objects.find((o) => o.id === id))
+                    .filter((o) => o)
+                    .map((o) => describeObject(o!))
+                    .join(", ")}
                 </p>
               )}
               {error && <p className="error">{error}</p>}

@@ -1,101 +1,16 @@
 import type { Scene, SceneObject } from "./scene";
 
-// Hand-made Recall targets. Simple, high-contrast, describable in one or two sentences.
-const BG = "#10162a";
+// Hand-made Recall targets, in three tiers. Easy: 2-4 things and at most one motion.
+// Medium: illustrated scenes with a backdrop and some motion. Hard: busy scenes with weather and camera moves.
+
 const RED = "#E5484D";
 const BLUE = "#3E7BFA";
 const YELLOW = "#F5C518";
 const GREEN = "#30A46C";
-const ORANGE = "#F76B15";
 const PURPLE = "#8E4EC6";
 const PINK = "#E93D82";
 const WHITE = "#F2F4F8";
-const GREY = "#9BA1A6";
 const BROWN = "#8D5B3E";
-
-const scene = (id: string, title: string, objects: Scene["objects"], timeline: Scene["timeline"] = []): Scene => ({
-  id,
-  title,
-  duration: 5,
-  background: BG,
-  objects,
-  timeline,
-});
-
-export const recallPool: Scene[] = [
-  scene("circle-over-square", "Red circle above a blue square", [
-    { id: "c", type: "circle", x: 400, y: 140, r: 55, fill: RED },
-    { id: "s", type: "rect", x: 400, y: 320, w: 120, h: 120, fill: BLUE },
-  ]),
-  scene("stars-arrow", "Three yellow stars and an arrow", [
-    { id: "s1", type: "star", x: 200, y: 225, r: 40, fill: YELLOW },
-    { id: "s2", type: "star", x: 320, y: 225, r: 40, fill: YELLOW },
-    { id: "s3", type: "star", x: 440, y: 225, r: 40, fill: YELLOW },
-    { id: "a", type: "arrow", x: 520, y: 225, x2: 660, y2: 225, stroke: WHITE, strokeWidth: 5 },
-  ]),
-  scene("traffic-light", "A traffic light", [
-    { id: "box", type: "rect", x: 400, y: 225, w: 110, h: 320, fill: "#2B2F36" },
-    { id: "r", type: "circle", x: 400, y: 125, r: 38, fill: RED },
-    { id: "y", type: "circle", x: 400, y: 225, r: 38, fill: YELLOW },
-    { id: "g", type: "circle", x: 400, y: 325, r: 38, fill: GREEN },
-  ]),
-  scene("snowman", "Snowman with an orange square hat", [
-    { id: "b", type: "circle", x: 400, y: 345, r: 75, fill: WHITE },
-    { id: "m", type: "circle", x: 400, y: 222, r: 55, fill: WHITE },
-    { id: "h", type: "circle", x: 400, y: 127, r: 40, fill: WHITE },
-    { id: "hat", type: "rect", x: 400, y: 72, w: 70, h: 40, fill: ORANGE },
-  ]),
-  scene("sliding-square", "A purple square slides left to right", [
-    { id: "s", type: "rect", x: 140, y: 225, w: 90, h: 90, fill: PURPLE },
-  ], [
-    { target: "s", action: "move", start: 0.3, duration: 1.6, to: { x: 660, y: 225 } },
-  ]),
-  scene("moon-orbit", "Grey ball orbiting a big yellow ball", [
-    { id: "sun", type: "circle", x: 400, y: 225, r: 65, fill: YELLOW },
-    { id: "moon", type: "circle", x: 0, y: 0, r: 18, fill: GREY },
-  ], [
-    { target: "moon", action: "orbit", start: 0, duration: 4, around: "sun", radius: 140, turns: 2, startAngle: 0 },
-  ]),
-  scene("hello-sign", "Pink sign that says HELLO", [
-    { id: "sign", type: "rect", x: 400, y: 200, w: 320, h: 130, fill: PINK },
-    { id: "t", type: "text", x: 400, y: 202, text: "HELLO", fontSize: 56, fill: WHITE },
-    { id: "post", type: "rect", x: 400, y: 345, w: 22, h: 160, fill: BROWN },
-  ]),
-  scene("growing-circles", "Four blue circles getting bigger", [
-    { id: "c1", type: "circle", x: 160, y: 225, r: 18, fill: BLUE },
-    { id: "c2", type: "circle", x: 290, y: 225, r: 32, fill: BLUE },
-    { id: "c3", type: "circle", x: 450, y: 225, r: 48, fill: BLUE },
-    { id: "c4", type: "circle", x: 640, y: 225, r: 66, fill: BLUE },
-  ]),
-  scene("arrow-to-goal", "Red arrow pointing up at a star labelled GOAL", [
-    { id: "star", type: "star", x: 400, y: 120, r: 50, fill: YELLOW },
-    { id: "label", type: "text", x: 400, y: 40, text: "GOAL", fontSize: 30, fill: WHITE },
-    { id: "a", type: "arrow", x: 400, y: 400, x2: 400, y2: 190, stroke: RED, strokeWidth: 6 },
-  ]),
-  scene("fade-and-square", "Green circle fades out next to a red square", [
-    { id: "c", type: "circle", x: 280, y: 225, r: 70, fill: GREEN },
-    { id: "s", type: "rect", x: 540, y: 225, w: 140, h: 140, fill: RED },
-  ], [
-    { target: "c", action: "fade", start: 0.4, duration: 1.4, to: 0 },
-  ]),
-  scene("big-small", "Big orange rectangle, two small green circles on the left", [
-    { id: "g1", type: "circle", x: 170, y: 160, r: 30, fill: GREEN },
-    { id: "g2", type: "circle", x: 170, y: 290, r: 30, fill: GREEN },
-    { id: "r", type: "rect", x: 500, y: 225, w: 300, h: 180, fill: ORANGE },
-  ]),
-];
-
-export type Difficulty = "easy" | "medium" | "hard";
-
-export const DIFFICULTIES: Record<Difficulty, { label: string; flashSeconds: number }> = {
-  easy: { label: "Easy", flashSeconds: 5 },
-  medium: { label: "Medium", flashSeconds: 3 },
-  hard: { label: "Hard", flashSeconds: 2 },
-};
-
-export const DESCRIBE_SECONDS = 30;
-
-// ---------- Medium & hard pools: illustrated icons, backdrops, more objects, more motion ----------
 
 type Extra = Partial<Pick<Scene, "background" | "particles" | "camera" | "entrance" | "glow">>;
 
@@ -110,6 +25,80 @@ const rich = (id: string, title: string, extra: Extra, objects: Scene["objects"]
 
 // Icon helper: icon(id, name, x, y, size)
 const icon = (id: string, name: string, x: number, y: number, w = 80): SceneObject => ({ id, type: "icon", icon: name, x, y, w });
+
+export const recallPool: Scene[] = [
+  rich("circle-over-square", "Red circle above a blue square on a neon grid", { background: "grid" }, [
+    { id: "c", type: "circle", x: 400, y: 120, r: 50, fill: RED },
+    { id: "s", type: "rect", x: 400, y: 330, w: 110, h: 110, fill: BLUE },
+  ]),
+  rich("stars-arrow", "Three yellow stars and an arrow pointing right, in space", { background: "space" }, [
+    { id: "s1", type: "star", x: 200, y: 225, r: 40, fill: YELLOW },
+    { id: "s2", type: "star", x: 320, y: 225, r: 40, fill: YELLOW },
+    { id: "s3", type: "star", x: 440, y: 225, r: 40, fill: YELLOW },
+    { id: "a", type: "arrow", x: 520, y: 225, x2: 660, y2: 225, stroke: WHITE, strokeWidth: 5 },
+  ]),
+  rich("traffic-light", "A traffic light in the city at night", { background: "city" }, [
+    { id: "box", type: "rect", x: 400, y: 215, w: 100, h: 290, fill: "#2B2F36" },
+    { id: "r", type: "circle", x: 400, y: 125, r: 34, fill: RED, glow: true },
+    { id: "y", type: "circle", x: 400, y: 215, r: 34, fill: YELLOW },
+    { id: "g", type: "circle", x: 400, y: 305, r: 34, fill: GREEN },
+  ]),
+  rich("cat-and-dog", "A cat on the left and a dog on the right under the sun", { background: "sky" }, [
+    icon("cat", "cat", 250, 330, 120),
+    icon("dog", "dog", 550, 330, 130),
+    icon("sun", "sun", 400, 90, 90),
+  ]),
+  rich("sliding-square", "A purple square slides left to right", { background: "grid" }, [
+    { id: "s", type: "rect", x: 140, y: 200, w: 90, h: 90, fill: PURPLE },
+  ], [
+    { target: "s", action: "move", start: 0.3, duration: 1.6, to: { x: 660, y: 200 } },
+  ]),
+  rich("moon-orbit", "The Moon orbits the Earth", { background: "space" }, [
+    icon("earth", "earth", 400, 225, 130),
+    icon("moon", "moon", 0, 0, 50),
+  ], [
+    { target: "moon", action: "orbit", start: 0, duration: 4, around: "earth", radius: 150, turns: 2, startAngle: 0 },
+  ]),
+  rich("hello-sign", "Pink sign that says HELLO", { background: "sky" }, [
+    { id: "sign", type: "rect", x: 400, y: 190, w: 320, h: 130, fill: PINK },
+    { id: "t", type: "text", x: 400, y: 192, text: "HELLO", fontSize: 56, fill: WHITE },
+    { id: "post", type: "rect", x: 400, y: 335, w: 22, h: 160, fill: BROWN },
+  ]),
+  rich("growing-apples", "Four apples in a row, each bigger than the last", { background: "sky" }, [
+    icon("a1", "apple", 150, 300, 40),
+    icon("a2", "apple", 290, 300, 64),
+    icon("a3", "apple", 450, 300, 90),
+    icon("a4", "apple", 640, 300, 120),
+  ]),
+  rich("arrow-to-goal", "Red arrow pointing up at a star labelled GOAL", { background: "grid" }, [
+    { id: "star", type: "star", x: 400, y: 120, r: 50, fill: YELLOW },
+    { id: "label", type: "text", x: 400, y: 40, text: "GOAL", fontSize: 30, fill: WHITE },
+    { id: "a", type: "arrow", x: 400, y: 400, x2: 400, y2: 190, stroke: RED, strokeWidth: 6 },
+  ]),
+  rich("fading-fish", "A fish fades away next to a sailboat on the sea", { background: "ocean" }, [
+    icon("boat", "boat", 520, 190, 120),
+    icon("fish", "fish", 260, 330, 90),
+  ], [
+    { target: "fish", action: "fade", start: 0.4, duration: 1.4, to: 0 },
+  ]),
+  rich("house-trees", "A house between two trees", { background: "sky" }, [
+    icon("tree1", "tree", 180, 310, 140),
+    icon("house", "house", 400, 320, 150),
+    icon("tree2", "pine-tree", 620, 310, 140),
+  ]),
+];
+
+export type Difficulty = "easy" | "medium" | "hard";
+
+export const DIFFICULTIES: Record<Difficulty, { label: string; flashSeconds: number }> = {
+  easy: { label: "Easy", flashSeconds: 5 },
+  medium: { label: "Medium", flashSeconds: 3 },
+  hard: { label: "Hard", flashSeconds: 2 },
+};
+
+export const DESCRIBE_SECONDS = 30;
+
+// ---------- Medium & hard pools ----------
 
 export const mediumPool: Scene[] = [
   rich("park-chase", "A dog chases a football past a tree on a sunny day", { background: "sky" }, [

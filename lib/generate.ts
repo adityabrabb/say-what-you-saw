@@ -1,13 +1,15 @@
 import "server-only";
 import { z } from "zod";
 import { ICON_NAMES } from "./icons";
+import { snapIcons } from "./iconMatch";
+import { SHOWCASES } from "./showcases";
 import { checkScene, clampToStage, scenesResponse } from "./schema";
 import type { Scene } from "./scene";
 
 const MODEL = process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash";
 const MAX_ATTEMPTS = 3;
 // Without an explicit cap OpenRouter reserves the model's full output limit, which needs far more credits.
-const MAX_TOKENS: Record<"recall" | "studio", number> = { recall: 4000, studio: 8000 };
+const MAX_TOKENS: Record<"recall" | "studio", number> = { recall: 3000, studio: 6000 };
 
 export type GenerateMode = "recall" | "studio";
 
@@ -43,9 +45,25 @@ Layout rules:
 - Palette: red #E5484D, blue #3E7BFA, yellow #F5C518, green #30A46C, orange #F76B15, purple #8E4EC6, pink #E93D82, white #F2F4F8, grey #9BA1A6, brown #8D5B3E, black #1C2024. Use natural colours for real things.
 - Every id referenced by "follow", "target" or "around" must exist.`;
 
+// The hand-made showcases double as few-shot style references for Studio.
+const STUDIO_EXAMPLES = SHOWCASES.map((v) => JSON.stringify(v.scenes[0])).join("\n\n");
+
 const MODE_RULES: Record<GenerateMode, string> = {
   recall: `This is a memory game. Recreate EXACTLY what the player describes, nothing more: same things, counts, colours, relative positions, sizes and motions. A named real thing ("a dog", "a rocket", "a palm tree") is an icon with the closest listed name; a plain shape ("a red circle") is a shape. Set "background" only if the player describes the setting (space, sky, sea, city at night, neon grid) and "particles" only if they mention rain, snow or sparkles. Do not add decorations, labels, camera or entrance effects the player didn't mention. Return exactly ONE scene with duration 5 and all objects visible (opacity 1) unless the player says something fades.`,
-  studio: `This is an explainer video that should look impressive. Break the explanation into 1-4 scenes, each 6-14 seconds. Pick a fitting background preset, prefer icons for real things, use "entrance": "stagger", a gentle camera move and particles where they suit the story. Add short text labels and a title, use eases ("back" for pop-ins, "bounce" for landings) and motion to show what is happening. Give each scene a one-sentence caption.`,
+  studio: `Think like a motion designer making a short animated explainer. Break the explanation into 1-3 scenes, each 8-12 seconds.
+
+Every scene:
+- ALWAYS picks the background preset that fits the story (space for astronomy, sky for weather/nature/outdoors, ocean for sea topics, city for urban/tech/night, grid for games/computers/retro). Use a hex colour only if nothing fits.
+- Uses 6-12 objects in a layered composition: big hero icons in the middle ground, supporting icons around them, and a foreground of short UPPERCASE text labels and arrows that explain what is happening. Add a title text near the top.
+- Uses an icon whenever a real thing is mentioned (sun, dog, rocket, tree, water...). Plain shapes are only for abstract ideas, highlights or shadows.
+- Animates most objects: moves along the story, grows for emphasis ("back" ease), bounces for landings, fades labels in as each idea is introduced, orbits for anything that goes round. Stagger the timing so ideas appear one after another.
+- Uses "entrance": "stagger", a gentle "camera" move, and particles when they suit the mood.
+- Keeps everything on screen with good spacing: nothing within 30px of an edge, labels never covering icons, and labels attached with "follow" when their object moves.
+- Has a one-sentence caption.
+
+Three example scenes for style (don't copy their content):
+
+${STUDIO_EXAMPLES}`,
 };
 
 export type Message = { role: "system" | "user" | "assistant"; content: string };
@@ -69,6 +87,13 @@ async function callModel(messages: Message[], maxTokens: number): Promise<string
       response_format: { type: "json_object" },
     }),
   });
+  if (res.status === 402) {
+    // Low credit: OpenRouter says how many tokens we can still afford. Retry once within that.
+    const text = await res.text();
+    const affordable = Number(text.match(/can only afford (\d+)/)?.[1]);
+    if (affordable >= 1200 && affordable < maxTokens) return callModel(messages, affordable - 100);
+    throw new Error("Out of OpenRouter credits. Top up at openrouter.ai/settings/credits and try again.");
+  }
   if (!res.ok) throw new Error(`OpenRouter ${res.status}: ${(await res.text()).slice(0, 300)}`);
   const data = await res.json();
   const content = data?.choices?.[0]?.message?.content;
@@ -115,7 +140,8 @@ ${MODE_RULES[mode]}` },
   return askWithRetries(messages, MAX_TOKENS[mode], (json) => {
     const parsed = scenesResponse.safeParse(json);
     if (!parsed.success) throw new Error(z.prettifyError(parsed.error));
-    const scenes = parsed.data.scenes as Scene[];
+    // Unknown icon names snap to the closest whitelisted icon rather than costing a retry.
+    const scenes = (parsed.data.scenes as Scene[]).map((sc) => snapIcons(sc).scene);
     const problems = scenes.flatMap(checkScene);
     if (problems.length) throw new Error(problems.join("; "));
     return scenes.map(clampToStage);
