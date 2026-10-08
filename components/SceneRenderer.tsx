@@ -89,8 +89,47 @@ function renderObject(o: FrameObject) {
   }
 }
 
-export default function SceneRenderer({ scene, time }: { scene: Scene; time: number }) {
+export interface Highlight {
+  id: string;
+  colour: string;
+}
+
+// Ring that circles an object, used on the reveal screen for missed/extra objects.
+function ring(o: FrameObject, colour: string) {
+  let cx = o.x;
+  let cy = o.y;
+  let r: number;
+  if (o.type === "arrow") {
+    const x2 = o.x2 ?? o.x + 60;
+    const y2 = o.y2 ?? o.y;
+    cx = (o.x + x2) / 2;
+    cy = (o.y + y2) / 2;
+    r = Math.hypot(x2 - o.x, y2 - o.y) / 2;
+  } else if (o.type === "text") {
+    r = ((o.fontSize ?? 16) * Math.max(1, (o.text ?? "").length) * 0.32) * o.scale;
+  } else if (o.type === "rect" || o.type === "image") {
+    r = (Math.hypot(o.w ?? 60, o.h ?? 40) / 2) * o.scale;
+  } else {
+    r = (o.r ?? 20) * o.scale;
+  }
+  return (
+    <circle
+      key={`ring-${o.id}`}
+      className="miss-ring"
+      cx={cx}
+      cy={cy}
+      r={r + 12}
+      fill="none"
+      stroke={colour}
+      strokeWidth={4}
+      strokeDasharray="10 6"
+    />
+  );
+}
+
+export default function SceneRenderer({ scene, time, highlights = [] }: { scene: Scene; time: number; highlights?: Highlight[] }) {
   const frame = computeFrame(scene, time);
+  const byId = new Map(frame.map((o) => [o.id, o]));
   const glowing = scene.objects.filter((o) => o.glow);
 
   return (
@@ -117,6 +156,10 @@ export default function SceneRenderer({ scene, time }: { scene: Scene; time: num
       <rect width={STAGE_W} height={STAGE_H} fill={scene.background ?? "#0f172a"} />
       {scene.stars && STARS.map((s, i) => <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#fff" opacity={s.o} />)}
       {frame.map(renderObject)}
+      {highlights.map((h) => {
+        const o = byId.get(h.id);
+        return o ? ring(o, h.colour) : null;
+      })}
     </svg>
   );
 }
