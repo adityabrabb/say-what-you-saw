@@ -1,16 +1,15 @@
 import Link from "next/link";
-import Player from "@/components/Player";
-import { solarSystem } from "@/lib/examples";
+import Studio from "@/components/Studio";
 
-export default function Studio() {
+export default function StudioPage() {
   return (
     <main>
       <header>
         <Link href="/" className="back">← Home</Link>
         <h1>Studio</h1>
-        <p>{solarSystem.title}</p>
+        <p>Describe anything. Watch it become an animation.</p>
       </header>
-      <Player video={solarSystem} />
+      <Studio />
     </main>
   );
 }

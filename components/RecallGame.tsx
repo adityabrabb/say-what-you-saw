@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import SceneRenderer from "./SceneRenderer";
+import { requestScenes } from "@/lib/api";
 import { DESCRIBE_SECONDS, DIFFICULTIES, recallPool, type Difficulty } from "@/lib/recallPool";
 import type { Scene } from "@/lib/scene";
 
@@ -30,7 +31,10 @@ export default function RecallGame() {
   const [round, setRound] = useState(0);
   const [phaseStart, setPhaseStart] = useState(0);
   const [now, setNow] = useState(0);
+  const [generated, setGenerated] = useState<Scene | null>(null);
+  const [genError, setGenError] = useState("");
   const seen = useRef(new Set<string>());
+  const roundRef = useRef(0);
   const descriptionRef = useRef(description);
   descriptionRef.current = description;
 
@@ -51,14 +55,23 @@ export default function RecallGame() {
     setTarget(nextTarget(seen.current));
     setDescription("");
     setSubmitted("");
-    setRound((r) => r + 1);
+    setGenerated(null);
+    setGenError("");
+    roundRef.current += 1;
+    setRound(roundRef.current);
     enter("ready");
   };
 
   // Reads from a ref so the auto-submit at 0s gets the latest dictated text.
   const submit = () => {
-    setSubmitted(descriptionRef.current.trim());
+    const text = descriptionRef.current.trim();
+    setSubmitted(text);
     enter("result");
+    if (!text) return;
+    const thisRound = roundRef.current;
+    requestScenes(text, "recall")
+      .then((scenes) => thisRound === roundRef.current && setGenerated(scenes[0]))
+      .catch((err) => thisRound === roundRef.current && setGenError(err.message));
   };
 
   // Drive the clock during timed phases and advance when each one runs out.
@@ -166,12 +179,21 @@ export default function RecallGame() {
             <p className="muted">{target.title}</p>
           </div>
           <div>
-            <p className="label">You said</p>
-            <blockquote className="said">
-              {submitted || <em className="muted">Nothing. Silence. Bold strategy.</em>}
-            </blockquote>
+            <p className="label">Your scene</p>
+            {generated ? (
+              <SceneRenderer scene={generated} time={5} />
+            ) : (
+              <div className="stage-placeholder">
+                {!submitted ? "Nothing to draw." : genError ? "Couldn't build your scene." : <span className="spinner" />}
+              </div>
+            )}
+            {genError && <p className="error">{genError}</p>}
           </div>
         </div>
+        <p className="label" style={{ marginTop: 16 }}>You said</p>
+        <blockquote className="said">
+          {submitted || <em className="muted">Nothing. Silence. Bold strategy.</em>}
+        </blockquote>
         <div className="row-end">
           <button className="ghost" onClick={() => setPhase("pick")}>
             Change difficulty
