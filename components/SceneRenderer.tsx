@@ -39,6 +39,16 @@ function renderObject(o: FrameObject) {
       const h = o.h ?? 40;
       return <rect key={o.id} x={o.x - w / 2} y={o.y - h / 2} width={w} height={h} rx={6} fill={o.fill ?? "#ccc"} transform={transform} {...common} />;
     }
+    case "star": {
+      // Five-pointed star, outer radius r, pointing up.
+      const r = o.r ?? 24;
+      const points = Array.from({ length: 10 }, (_, i) => {
+        const rad = i % 2 === 0 ? r : r * 0.42;
+        const a = -Math.PI / 2 + (i * Math.PI) / 5;
+        return `${(o.x + rad * Math.cos(a)).toFixed(2)},${(o.y + rad * Math.sin(a)).toFixed(2)}`;
+      }).join(" ");
+      return <polygon key={o.id} points={points} fill={o.fill ?? "#ccc"} strokeLinejoin="round" transform={transform} {...common} />;
+    }
     case "text":
       return (
         <text

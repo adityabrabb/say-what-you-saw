@@ -4,14 +4,14 @@
 export const STAGE_W = 800;
 export const STAGE_H = 450;
 
-export type ObjectType = "circle" | "rect" | "text" | "arrow" | "image";
+export type ObjectType = "circle" | "rect" | "star" | "text" | "arrow" | "image";
 
 export interface SceneObject {
   id: string;
   type: ObjectType;
   x: number; // centre (circle/rect/text/image) or start point (arrow); offset from `follow` target if set
   y: number;
-  r?: number; // circle radius
+  r?: number; // circle/star radius
   w?: number; // rect/image width
   h?: number; // rect/image height
   x2?: number; // arrow end point
