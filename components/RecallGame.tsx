@@ -205,7 +205,15 @@ const roundReport = (r: RoundResult): RecallRound => ({
   score: r.score?.total ?? 0,
 });
 
-export default function RecallGame({ onFinish, onRound }: { onFinish?: (r: RecallFinish) => void; onRound?: (r: RecallRound, index: number) => void } = {}) {
+export default function RecallGame({
+  onFinish,
+  onRound,
+  onPhase,
+}: {
+  onFinish?: (r: RecallFinish) => void;
+  onRound?: (r: RecallRound, index: number, total: number) => void;
+  onPhase?: (phase: string) => void;
+} = {}) {
   const [phase, setPhase] = useState<Phase>("pick");
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [rounds, setRounds] = useState<number>(5);
@@ -223,6 +231,9 @@ export default function RecallGame({ onFinish, onRound }: { onFinish?: (r: Recal
 
   useEffect(() => setBest(readBest(rounds, difficulty)), [rounds, difficulty]);
 
+  // Tell the film which phase the game is in, so it can stay quiet during the timed ones.
+  useEffect(() => onPhase?.(phase), [phase, onPhase]);
+
   // Report each round once, when its score (or its failure) is known.
   const reported = useRef(new Set<string>());
   useEffect(() => {
@@ -233,9 +244,9 @@ export default function RecallGame({ onFinish, onRound }: { onFinish?: (r: Recal
       const settled = !!r.score || !!r.error || !r.said;
       if (reported.current.has(key) || !submitted || !settled) return;
       reported.current.add(key);
-      onRound(roundReport(r), i);
+      onRound(roundReport(r), i, rounds);
     });
-  }, [results, phase, onRound]);
+  }, [results, phase, onRound, rounds]);
 
   // First visit: show How to Play before the first game.
   useEffect(() => {

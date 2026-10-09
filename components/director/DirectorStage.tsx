@@ -82,7 +82,9 @@ export interface DirectorWrap {
   demo: boolean;
 }
 
-export default function DirectorStage({ film }: { film?: { onWrap: (w: DirectorWrap) => void } } = {}) {
+export default function DirectorStage({
+  film,
+}: { film?: { onWrap: (w: DirectorWrap) => void; onLine?: (l: { text: string; kind: "direction" | "shot" | "undo" }) => void } } = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [phase, setPhase] = useState<"intro" | "starting" | "live">("intro");
@@ -415,11 +417,13 @@ export default function DirectorStage({ film }: { film?: { onWrap: (w: DirectorW
     e.lines.push(text);
 
     if (SHOT.test(bare)) {
+      film?.onLine?.({ text, kind: "shot" });
       e.capture = true;
       showSubtitle(n, text, `Shot ${(e.frames.length % STRIP_SIZE) + 1} of ${STRIP_SIZE}`);
       return;
     }
     if (UNDO.test(bare)) {
+      film?.onLine?.({ text, kind: "undo" });
       const prev = e.history.pop();
       if (prev) {
         applySettings(prev);
@@ -429,6 +433,7 @@ export default function DirectorStage({ film }: { film?: { onWrap: (w: DirectorW
       return;
     }
 
+    film?.onLine?.({ text, kind: "direction" });
     setThinking(true);
     sfx.slate();
     showSubtitle(n, text, "Setting up the shot…");

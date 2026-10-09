@@ -1,6 +1,6 @@
 # Grand Plan: Say What You Saw
 
-> Status: **Phase 1 DONE (Oct 9, 2026).** Next up: **Phase 2: The Director**.
+> Status: **Phases 1 and 2 DONE (Oct 10, 2026).** Next up: **Phase 3: The Spectacle**.
 > A fresh session should read `CLAUDE.md`, then this file, and continue from the first unchecked phase.
 
 ## The vision
@@ -75,27 +75,27 @@ The twist. It replaces the photo-strip popup after the fourth shot when Director
 ## Phase 2: The Director (one voice for the whole film)
 
 **The voice**
-- [ ] One character: an arrogant, washed-up film director who roasts you constantly.
-- [ ] After **each Recall answer** and **each director line**, the model returns **one short roast quoting what you said**.
-- [ ] New `POST /api/roast` route: text in, `{ line }` out, with zod, the provider chain, cache and rate limit, and a big pool of funny offline roasts that quote your words.
-- [ ] The roast shows as a **typewriter subtitle** ("THE DIRECTOR:") and is **spoken with speech synthesis** using the deepest available English voice (low pitch, slow rate).
-- [ ] A **mute toggle for the director's voice**, separate from the sound toggle.
-- [ ] It never blocks gameplay: roasts arrive asynchronously, and a late roast is dropped.
+- [x] One character: an arrogant, washed-up film director who roasts you constantly.
+- [x] After **each Recall answer** and **each director line**, the model returns **one short roast quoting what you said**.
+- [x] New `POST /api/roast` route: text in, `{ line }` out, with zod, the provider chain, cache and rate limit, and a big pool of funny offline roasts that quote your words.
+- [x] The roast shows as a **typewriter subtitle** ("THE DIRECTOR:") and is **spoken with speech synthesis** using the deepest available English voice (low pitch, slow rate).
+- [x] A **mute toggle for the director's voice**, separate from the sound toggle.
+- [x] It never blocks gameplay: roasts arrive asynchronously, and a late roast is dropped.
 
 **Interruptions in Recall (no timing changes)**
-- [ ] Between rounds, the director cuts in with an overlay: **"Interruption. Round 2. Try not to embarrass yourself."**
-- [ ] It only appears on Recall's result screen, before you press next, so the countdown and flash timing stay exactly the same.
+- [x] Between rounds, the director cuts in with an overlay: **"Interruption. Round 2. Try not to embarrass yourself."**
+- [x] It only appears on Recall's result screen, before you press next, so the countdown and flash timing stay exactly the same. (It shows the moment the round's score is in; if you press Next first, you miss it. Nothing is ever shown or spoken during the countdown, the flash or the 30s describe phase.)
 
 **Fourth-wall reactions (local, no model)**
-- [ ] Switch tabs and come back: **"Where did you go? The scene is still running."**
-- [ ] Idle for 20 seconds or more: **"Hello? Is the talent asleep?"**
-- [ ] Local time of day, e.g. **"It's 2 AM and you're still playing this. Respect."**
-- [ ] Resizing the window: **"Stop touching the set."**
-- [ ] Mouse heading to the top-left corner (towards back/close): **"Leaving already? Coward."**
-- [ ] Copying text: **"Stealing evidence?"**
-- [ ] Right-click opens a **custom film-style context menu** (Cut, Retake, Select Scene, Mute director…).
-- [ ] For the judges who open dev tools, the console prints a styled **detective's note** with ASCII art.
-- [ ] Each reaction is rate-limited so it never spams, and none of them fire during the Recall flash.
+- [x] Switch tabs and come back: **"Where did you go? The scene is still running."**
+- [x] Idle for 20 seconds or more: **"Hello? Is the talent asleep?"**
+- [x] Local time of day, e.g. **"It's 2 AM and you're still playing this. Respect."**
+- [x] Resizing the window: **"Stop touching the set."**
+- [x] Mouse heading to the top-left corner (towards back/close): **"Leaving already? Coward."**
+- [x] Copying text: **"Stealing evidence?"**
+- [x] Right-click opens a **custom film-style context menu** (Cut, Retake, Select Scene, Mute director…).
+- [x] For the judges who open dev tools, the console prints a styled **detective's note** with ASCII art.
+- [x] Each reaction is rate-limited so it never spams, and none of them fire during the Recall flash.
 
 ## Phase 3: The Spectacle
 
@@ -171,3 +171,12 @@ The twist. It replaces the photo-strip popup after the fourth shot when Director
   - `/api/verdict`: text only, zod-validated, provider chain, 10-min cache, 6/min rate limit (over the limit = house verdict). Evidence must quote real words and be unique, otherwise it's swapped for real lines. Funny offline fallback in `lib/verdict/offline.ts`. Client times out at 14s and falls back too.
   - Tested in headless Chrome: fake camera (full sequence, title/favicon swap and restore, PNG download, refresh resumes the stamped poster, credits), demo subject (sketch drag), model blocked (offline charge), reduced motion (no 3D, 4.5s), phone 390x844, and a real 3-round Recall game in the film.
   - Fixed along the way: on phones in the film, the demo notice covered the WRAP button.
+- **Phase 2 (Oct 10, 2026): The Director, shipped.**
+  - Files: `lib/roast/{schema,offline,prompt,client,host,voice,console}.ts`, `app/api/roast/route.ts`, `components/film/{DirectorHost.tsx,useFourthWall.ts}`; edits in `Film.tsx`, `RecallGame.tsx`, `DirectorStage.tsx`, `globals.css`.
+  - **One voice:** `lib/roast/host.ts` is a single queue (interrupt > roast > chatter) that shows a line as a typewriter subtitle ("THE DIRECTOR") and speaks it via speech synthesis (deepest English voice by name heuristic in `voice.ts`: David / Google UK English Male / Daniel; pitch 0.35, rate 0.88). Muting all sound also silences the voice. Separate chip "Director on/off" in the corner (saved in localStorage `swys-director-voice`) and the same toggle in the right-click menu. Subtitles stay when the voice is off.
+  - **Roasts:** after every Recall answer (`onRound`) and every director line (`onLine`). `/api/roast` is text only: zod, provider chain, 10-min cache, 24/min per IP (over the limit = house roast, never an error), one retry, and an on-brief check (must quote a real word the player said; no looks/body/voice/age/identity words unless the player said them). Silence, "freeze" and "cut" come from the house pool with no model call. 80+ house roasts (`offline.ts`) all pass the same off-limits filter (960 combinations swept). A roast arriving more than 10s after its moment is dropped; a newer direction supersedes an older one.
+  - **Interruption:** "Interruption. Round N. Try not to embarrass yourself." on Recall's result screen when another round follows. Recall gained report-only hooks: `onRound(r, i, total)` and `onPhase(phase)`.
+  - **Quiet rules:** the host is silenced in the opening, in Act III, and in Recall's ready/flash/describe phases (set synchronously from `onPhase`), and a new scene never inherits the last scene's line.
+  - **Fourth wall (local, rate limited: 8s between any two, own cooldowns):** back from another tab (4s+ away), idle 20s (held while a round is being scored), the clock (once per visit, a few seconds into Act I), resize (not on touch, not in the first 4s), mouse heading for the top-left corner or leaving the window there (not over buttons), copying text. Right-click: film-style action menu (Retake this act, Select scene, Director's voice, Sound), but the browser's own menu stays on text fields and on touch. Console prints a styled detective's note with ASCII art, once.
+  - **Tested** in headless Chrome against a production build: real 3-round Recall game with speech stubbed (interruptions before rounds 2 and 3 only, roasts quote the answers, silent through every timed phase, 7 utterances all low and slow), every reaction including the 20s idle, the context menu and both voice toggles, Director direction roasts on desktop and a 390px phone (layout fixed: the "DIRECTOR MODE" chip is hidden on phones so the top bar fits in two rows), reduced motion (line shows fully typed), Act III re-run (camera, reduced, phone) with the director silent through it, standalone `/recall` and `/director` unchanged, API cases (bad answer, great answer, direction, prompt-injection attempt, silence, freeze, bad input).
+  - Fixed along the way: a silent round's lines were dropped because Recall reports a round the same instant it enters the result screen; the idle line fired while a round was being scored; chatter could age out a round's roast.

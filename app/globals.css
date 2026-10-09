@@ -773,7 +773,7 @@ body.film-on .crt { background: repeating-linear-gradient(to bottom, rgba(0, 0, 
 
 /* Act I wraps the untouched Recall game */
 .film-act1 { padding-bottom: 110px; }
-.act-label { margin: 6px 0 18px; padding-right: 230px; font-family: var(--font-serif-stack); font-style: italic; font-size: 20px; color: var(--cream); }
+.act-label { margin: 6px 0 18px; padding-right: 340px; font-family: var(--font-serif-stack); font-style: italic; font-size: 20px; color: var(--cream); }
 .film-next {
   position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 50; width: min(560px, calc(100% - 32px));
   display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px 10px 16px;
@@ -783,7 +783,7 @@ body.film-on .crt { background: repeating-linear-gradient(to bottom, rgba(0, 0, 
 .film-next strong { color: var(--cream); font-size: 18px; }
 
 /* Act II: room for the film chrome beside Director's top bar */
-body.film-on .director-top { right: 240px; }
+body.film-on .director-top { right: 350px; }
 .dir-chip.wrap { color: #120c04; background: var(--amber); border-color: var(--amber); font-size: 11px; }
 
 /* Corner chrome: mute + Select Scene */
@@ -845,7 +845,8 @@ body.film-on .director-top { right: 240px; }
   .film-btn { padding: 11px 14px; }
   .act-label { padding-right: 0; margin-top: 44px; font-size: 18px; }
   body.film-on .director-top { right: 14px; top: 52px; }
-  body.film-on .dir-status { top: 132px; }
+  body.film-on .dir-status { top: 122px; }
+  body.film-on .dir-chip.title { display: none; }
   .film-next { flex-direction: column; align-items: stretch; text-align: center; }
   .credits-actions .film-btn { flex: 1 1 45%; font-size: 11px; }
 }
@@ -1043,4 +1044,42 @@ body.film-arcade .grid-floor { opacity: 0.38; animation: fade-in 1.8s ease both;
 @media (prefers-reduced-motion: reduce) {
   .verdict-root.shake, .verdict-glitch, .err-win, .verdict-actions, .verdict-poster { animation: none !important; }
   .verdict-frame { transition: none; }
+}
+
+/* ================= THE DIRECTOR (voice, subtitles, action menu) ================= */
+.host-line {
+  position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 85; pointer-events: none;
+  width: min(700px, calc(100vw - 32px)); padding: 10px 16px 12px; text-align: left;
+  background: rgba(9, 5, 14, 0.88); border: 1px solid rgba(243, 233, 210, 0.22); border-left: 4px solid var(--amber); border-radius: 3px;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.55), 0 0 28px rgba(255, 43, 214, 0.12);
+  display: flex; flex-direction: column; gap: 4px; animation: host-in 0.25s ease-out both;
+}
+@keyframes host-in { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.host-tag { font-family: var(--font-head); font-size: 8px; letter-spacing: 0.22em; color: var(--amber); display: flex; align-items: center; gap: 8px; }
+.host-text { font-family: var(--font-serif-stack); font-style: italic; font-weight: 500; font-size: clamp(17px, 2.3vw, 24px); line-height: 1.25; color: var(--cream); min-height: 1.25em; }
+.host-line.interrupt { border-left-color: #ff3b2f; background: rgba(22, 6, 8, 0.92); box-shadow: 0 0 30px rgba(0, 0, 0, 0.55), 0 0 34px rgba(255, 59, 47, 0.22); }
+.host-line.interrupt .host-tag { color: #ff6a5e; }
+.host-line.interrupt .host-text { font-style: normal; font-weight: 700; }
+.host-siren { width: 9px; height: 9px; border-radius: 50%; background: #ff3b2f; box-shadow: 0 0 10px #ff3b2f; animation: siren-pulse 0.6s ease-in-out infinite alternate; }
+@keyframes siren-pulse { from { opacity: 0.35; } to { opacity: 1; } }
+/* In Director the status notice sits under the top bar; keep clear of it */
+.host-line.in-act2 { top: 104px; }
+
+/* Right-click action menu */
+.ctx-menu {
+  position: fixed; z-index: 97; width: 228px; padding: 4px; display: flex; flex-direction: column;
+  background: rgba(7, 4, 11, 0.97); border: 1px solid rgba(243, 233, 210, 0.25); border-top: 3px solid var(--amber); border-radius: 3px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6), 0 0 24px rgba(255, 43, 214, 0.12); animation: fade-in 0.12s ease-out both;
+}
+.ctx-head { margin: 4px 8px 6px; font-family: var(--font-head); font-size: 8px; letter-spacing: 0.3em; color: var(--amber); }
+.ctx-menu button { text-align: left; font: 500 17px var(--font-serif-stack); color: var(--cream); background: none; border: 0; padding: 8px 10px; cursor: pointer; border-radius: 2px; }
+.ctx-menu button:hover, .ctx-menu button:focus-visible { background: rgba(255, 181, 71, 0.13); color: var(--amber); outline: none; }
+
+@media (max-width: 640px) {
+  .host-line { top: 118px; }
+  .host-line.in-act2 { top: 190px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .host-line, .ctx-menu { animation: none !important; }
+  .host-siren { animation: none; }
 }

@@ -22,6 +22,8 @@ The app's text boxes are plain inputs. Wispr Flow dictates into them. Do NOT bui
 
 **Landing (`/`)**: neon arcade theme (pixel font, warp starfield, synthwave grid, CRT scanlines), 3D-ish title with CSS tilt, three.js neon moon (lazy), two arcade buttons RECALL and DIRECTOR, CRT power-off transition. Web Audio sound kit with mute toggle.
 
+**The Director (Phase 2; `lib/roast/*`, `components/film/DirectorHost.tsx` + `useFourthWall.ts`, `/api/roast`)**: the film's one voice, an arrogant washed-up director. `lib/roast/host.ts` is the single queue + speech (deepest English voice via `voice.ts`, pitch .35, rate .88; own "Director on/off" chip + right-click menu item; global mute also silences it). Roasts after every Recall answer (`onRound`) and director line (`onLine`), quoting the player; `/api/roast` is text-only with cache, rate limit, zod, on-brief check and a big house pool (never errors; silence/freeze/cut never call the model). Interruption overlay "Interruption. Round N. Try not to embarrass yourself." on Recall's result screen. Quiet (nothing shown or spoken) in the opening, Act III and Recall's ready/flash/describe phases. Local fourth-wall reactions: tab away, 20s idle, clock (once a visit), resize, mouse to top-left, copy; film-style right-click menu; console detective note. Roasts only what was said, never looks/body/voice/age/identity.
+
 **Act III · The Verdict (`components/film/Verdict.tsx`, `lib/verdict/*`, `/api/verdict`)**: the plot twist (you were the suspect). The frozen frame, then the tab title becomes "Suspect Detected" with a blinking red-siren favicon (restored after), fake retro error windows stack up while a fake cursor clicks them, then a ~1s glitch (static, RGB split, warp, detuned tone; the ONLY grain in the film), the typed twist, then a three.js shatter (`lib/verdict/shatter.ts`, lazy, 80 shards, slow-mo, staggered reassembly into the poster's back, spin reveal). The wanted poster is a canvas (`lib/verdict/poster.ts`, 1200x1600: aged paper, sepia still, name, alias, crime, Exhibits A-C quoting real words, tiny reward, GUILTY stamp with thud and shake). No camera: the fake cursor drags a police sketch in, captioned "Suspect refuses to be photographed. Suspicious." Buttons: Download poster (PNG), Appeal (restart Act I), Roll credits. "Skip to the verdict" chip. Reduced motion: no cursor, no 3D, crossfade. The charge comes from `/api/verdict` (text only) with a funny offline fallback. A refresh shows the stamped poster (saved as JPEG in film state).
 
 **Recall / Witness (`/recall`)**: How-to-Play tutorial (first visit), Easy/Medium/Hard (5s/3s/2s flash) with separate pools (11/8/8 hand-made scenes using neon icons, hand-drawn art, backdrops, particles), 3 or 5 rounds, 30s dictation countdown with auto-submit, description -> scene via `/api/generate`, deterministic scoring, reveal with missed/extra rings and names, count-up score, verdicts, confetti, best score in localStorage, end screen with Home / Change settings / Play again.
@@ -41,6 +43,7 @@ app/
   api/generate/route.ts   description -> scenes (recall|studio)
   api/edit/route.ts       Studio voice edit -> patch
   api/direct/route.ts     Director line -> shot-settings patch (cache, rate limit, retry, repair, offline)
+  api/roast/route.ts      one director roast line (text in, line out; cache, rate limit, retry, on-brief check, house fallback)
   api/verdict/route.ts    Act III case file (text) -> charge sheet {alias, crime, evidence[3], reward} (cache, rate limit, retry, real-quote check, offline)
 components/
   Landing, NeonMoon, Starfield, SoundToggle, PageHeader
@@ -49,6 +52,7 @@ components/
   Studio, Player                            (hidden Studio)
   director/DirectorStage.tsx                (Act 2 UI + render loop)
   film/Film.tsx Opening.tsx Cards.tsx Credits.tsx Verdict.tsx   the film shell, opening, cast/act cards, credits, Act III
+  film/DirectorHost.tsx useFourthWall.ts   the director: subtitle, right-click menu, reactions
 lib/
   scene.ts schema.ts engine.ts             scene JSON types, zod validation, animation engine (easing, stagger, camera)
   score.ts                                 deterministic Recall scoring
@@ -65,6 +69,7 @@ lib/
   director/catalog.ts    backgrounds.json types + bestBackground matcher
   director/prompt.ts     Director LLM prompt   director/offline.ts  keyword fallback director
   director/silhouette.ts demo subject          director/strip.ts    photo strip builder
+  roast/schema offline prompt client host voice console .ts   Phase 2: roast schemas, house roasts, prompt, client, host queue + speech, voice picker, console note
   film.ts              film state (scenes, saved progress, cue matcher, credits card)
   verdict/schema.ts offline.ts prompt.ts poster.ts shatter.ts   Act III: zod schemas, fallback charge, prompt, poster canvas, three.js shatter
 public/icons/neon.svg          184-icon neon sprite (Tabler/Lucide/Game Icons) - regenerate with scripts/build-icons.mjs
@@ -85,6 +90,7 @@ One object; the model only ever returns a patch; everything is clamped.
 - `POST /api/generate` `{ description, mode: "recall"|"studio" }` -> `{ scenes, engine }` (engine = provider name or "offline")
 - `POST /api/edit` `{ video, instruction, currentScene }` -> `{ video, changes, scenes, summary, engine }`
 - `POST /api/direct` `{ line, settings }` -> `{ patch, note, engine, cached? }`; 12 lines/min per IP (in-memory), 10-min cache keyed by line+settings, one retry with error feedback, then `repairPatch`, then offline keyword director.
+- `POST /api/roast` `{ kind: answer|direction|shot|undo, said, truth, score }` -> `{ line, engine }`; always 200 (house roast on any failure), 24/min per IP, 10-min cache, one retry, line must quote a real word of `said` and avoid off-limits words.
 - `POST /api/verdict` `{ name, witnessScore, witnessMax, rounds[{title,truth,said,score}], directorLines[] }` -> `{ alias, crime, evidence[3]{quote,note}, reward, engine }`; 6/min per IP (over the limit returns the offline charge), 10-min cache, one retry, evidence must quote real, unique words.
 
 ## AI providers (lib/providers.ts)
@@ -113,7 +119,8 @@ Both keys are set locally and on Vercel. OpenRouter credits are low; Gemini is t
 - Headless/no-GPU tests run Director at ~35-60 fps; real browsers are faster. Only tested with a fake webcam so far; Adi's real webcam is the true test.
 - Windows dev: stopping `npm run dev` can orphan the Next process on port 3000; kill it by port before restarting. After changing a module's exports, restart the dev server (HMR serves stale modules).
 - `vercel deploy` once printed a stray `"status": "error"` line while the deployment was Ready.
-- Recall changes are limited to report-only hooks (`onFinish` with `rounds`, `onRound`). `onRound` is not consumed yet (Phase 2 roasts will use it).
+- Recall changes are limited to report-only hooks: `onFinish` (with `rounds`), `onRound(r, i, total)`, `onPhase(phase)`. Film consumes all three (Act III case file, roasts/interruptions, quiet time). Recall's own scoring (`/api/generate`) can take 10-25s on a slow model, so a round's roast and interruption only appear once its score is in.
+- The director's voice quality depends on the browser's installed voices; Chrome's Google voices ignore pitch.
 - Act III: if the AI director set a dark backdrop and no person is found, the frozen frame (and shards) is dark. That's real content, not a bug.
 
 ## Next steps

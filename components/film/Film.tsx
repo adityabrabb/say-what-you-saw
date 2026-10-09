@@ -1,9 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef, useState } from "react";
-import RecallGame, { type RecallFinish } from "@/components/RecallGame";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import RecallGame, { type RecallFinish, type RecallRound } from "@/components/RecallGame";
 import Verdict from "./Verdict";
+import DirectorHost from "./DirectorHost";
+import { host } from "@/lib/roast/host";
+import { requestRoast } from "@/lib/roast/client";
 import type { DirectorWrap } from "@/components/director/DirectorStage";
 import { blobToJpeg, FRESH, loadFilm, saveFilm, type FilmState, type SceneId, type VerdictResult } from "@/lib/film";
 import { drone, filmSfx, isMuted, onMuteChange, projector, setMuted } from "@/lib/sound";
@@ -26,6 +29,10 @@ const MENU: { scene: SceneId; label: string }[] = [
   { scene: "credits", label: "End credits" },
 ];
 
+// Scenes where the director may speak at all; the game's timed phases are quiet on top of this.
+const TALKATIVE = new Set<SceneId>(["cast", "act1-card", "act1", "act2-card", "act2", "credits"]);
+const RETAKE: Partial<Record<SceneId, SceneId>> = { act1: "act1-card", "act1-card": "act1-card", act2: "act2-card", "act2-card": "act2-card", act3: "act3" };
+
 const ACT1 = ["Something happened tonight.", "It lasted only a few seconds.", "You're the only one who saw it.", "Tell us exactly what you saw."];
 const ACT2 = ["You've told us what you saw.", "Now the camera's on you.", "Direct your own scene."];
 
@@ -35,6 +42,10 @@ export default function Film() {
   const [reduced, setReduced] = useState(false);
   const [muted, setMutedState] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [recallPhase, setRecallPhase] = useState("pick");
+  const [scoring, setScoring] = useState(false); // a Recall round is waiting for its score
+  const settledAt = useRef(0);
+  useSyncExternalStore(host.subscribe, host.getVersion, () => 0); // re-render when the director's voice is toggled
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // Resume where the viewer left off.
@@ -52,6 +63,7 @@ export default function Film() {
       timers.current.forEach(clearTimeout);
       drone.stop(0.5);
       projector.stop(0.3);
+      host.setQuiet(true);
     };
   }, []);
 
@@ -72,6 +84,21 @@ export default function Film() {
   }, [film?.scene]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const scene = film?.scene;
+
+  // The director stays quiet in the opening, in Act III, and during Recall's timed phases.
+  const timedPhase = scene === "act1" && ["ready", "flash", "describe"].includes(recallPhase);
+  const reactionsOn = !!scene && TALKATIVE.has(scene) && !timedPhase;
+  useEffect(() => host.setQuiet(!reactionsOn), [reactionsOn]);
+  useEffect(() => {
+    host.silence(); // a new scene never inherits the last scene's line
+    setRecallPhase("pick");
+    setScoring(false);
+  }, [scene]);
+  useEffect(() => {
+    // Cleared when the round's score is reported (an empty answer is reported at once)
+    setScoring(recallPhase === "result" && Date.now() - settledAt.current > 1500);
+  }, [recallPhase]);
+
   useEffect(() => {
     if (!scene) return;
     drone.level(DRONE[scene]);
@@ -110,6 +137,29 @@ export default function Film() {
   const act1Done = useCallback(() => go("act1", "cut"), [go]);
   const act2Done = useCallback(() => go("act2", "cut"), [go]);
   const witness = useCallback((r: RecallFinish) => update({ witness: r }), [update]);
+
+  // The director's lines. Report-only hooks: Recall and Director never wait for any of this.
+  const onRound = useCallback((r: RecallRound, i: number, total: number) => {
+    setScoring(false);
+    settledAt.current = Date.now();
+    if (i + 1 < total) host.say(`Interruption. Round ${i + 2}. Try not to embarrass yourself.`, "interrupt", { maxAgeMs: 30_000 });
+    const since = Date.now();
+    void requestRoast({ kind: "answer", said: r.said, truth: r.truth, score: r.score }).then((res) => host.say(res.line, "roast", { since }));
+  }, []);
+  // Recall reports a silent round in the same instant it enters the result screen, before React could
+  // re-render the film. So the director's quiet time is lifted here, synchronously, not in an effect.
+  const onPhase = useCallback((p: string) => {
+    host.setQuiet(["ready", "flash", "describe"].includes(p));
+    setRecallPhase(p);
+  }, []);
+  const directionSeq = useRef(0);
+  const onLine = useCallback((l: { text: string; kind: "direction" | "shot" | "undo" }) => {
+    const id = ++directionSeq.current;
+    const since = Date.now();
+    void requestRoast({ kind: l.kind, said: l.text, truth: "", score: null }).then((res) => {
+      if (id === directionSeq.current) host.say(res.line, "roast", { since }); // a newer direction supersedes this one
+    });
+  }, []);
   const wrap = useCallback(
     async (w: DirectorWrap) => {
       const strip = w.strip ? await blobToJpeg(w.strip).catch(() => null) : null;
@@ -132,7 +182,7 @@ export default function Film() {
       {film.scene === "act1" && (
         <main className="film-act1">
           <p className="act-label">Act I · The Witness</p>
-          <RecallGame onFinish={witness} />
+          <RecallGame onFinish={witness} onRound={onRound} onPhase={onPhase} />
           {film.witness && (
             <div className="film-next">
               <span>
@@ -146,12 +196,21 @@ export default function Film() {
         </main>
       )}
       {film.scene === "act2-card" && <ActCard act="Act II" title="The Director's Stage" lines={ACT2} onDone={act2Done} reduced={reduced} />}
-      {film.scene === "act2" && <DirectorStage film={{ onWrap: wrap }} />}
+      {film.scene === "act2" && <DirectorStage film={{ onWrap: wrap, onLine }} />}
       {film.scene === "act3" && <Verdict film={film} reduced={reduced} onVerdict={verdict} onAppeal={replay} onCredits={toCredits} />}
       {film.scene === "credits" && <Credits film={film} onReplay={replay} reduced={reduced} />}
 
       {chrome && (
         <div className="film-chrome">
+          <button
+            className="film-chip"
+            onClick={() => host.setVoiceMuted(!host.voiceMuted)}
+            aria-pressed={!host.voiceMuted}
+            aria-label={host.voiceMuted ? "Turn the director's voice on" : "Turn the director's voice off"}
+            title="The director's voice"
+          >
+            Director {host.voiceMuted ? "off" : "on"}
+          </button>
           <button className="film-chip" onClick={() => setMuted(!muted)} aria-label={muted ? "Unmute" : "Mute"} title={muted ? "Sound off" : "Sound on"}>
             {muted ? "♪̸" : "♪"}
           </button>
@@ -175,7 +234,18 @@ export default function Film() {
         </div>
       )}
 
-      {fx && <div className={`film-fx ${fx.kind}`} key={fx.key} aria-hidden />}
+      <DirectorHost
+        scene={film.scene}
+        reduced={reduced}
+        reactions={reactionsOn}
+        idleHold={scoring}
+        soundMuted={muted}
+        onToggleSound={() => setMuted(!muted)}
+        onSelectScene={() => setMenu(true)}
+        onRetake={RETAKE[film.scene] ? () => go(RETAKE[film.scene]!, "cut", film.scene === "act3" ? { verdict: null } : {}) : undefined}
+      />
+
+      {fx && fx.kind !== "none" && <div className={`film-fx ${fx.kind}`} key={fx.key} aria-hidden />}
     </div>
   );
 }
