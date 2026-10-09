@@ -29,7 +29,7 @@ function tiltHandlers(max: number) {
   };
 }
 
-type Mode = "recall" | "studio";
+type Mode = "recall" | "director";
 
 export default function Landing() {
   const router = useRouter();
@@ -38,7 +38,7 @@ export default function Landing() {
 
   useEffect(() => {
     router.prefetch("/recall");
-    router.prefetch("/studio");
+    router.prefetch("/director");
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
@@ -86,9 +86,9 @@ export default function Landing() {
           <span className="btn-cap">RECALL</span>
           <span className="btn-sub">A scene flashes. Say what you saw. Get scored.</span>
         </button>
-        <button className="arcade-btn cyan tilt" style={{ animationDelay: "1.25s" }} onClick={() => pick("studio")} onPointerEnter={() => sfx.hover()} {...tiltHandlers(10)}>
-          <span className="btn-cap">STUDIO</span>
-          <span className="btn-sub">Describe anything. Watch it come alive. Edit by voice.</span>
+        <button className="arcade-btn cyan tilt" style={{ animationDelay: "1.25s" }} onClick={() => pick("director")} onPointerEnter={() => sfx.hover()} {...tiltHandlers(10)}>
+          <span className="btn-cap">DIRECTOR</span>
+          <span className="btn-sub">Step into the shot. Direct the scene, light and look with your voice.</span>
         </button>
       </div>
       <p className="insert-coin">PRESS A BUTTON TO START</p>

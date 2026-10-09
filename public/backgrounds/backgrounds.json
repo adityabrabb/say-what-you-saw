@@ -1,0 +1,91 @@
+{
+  "images": [
+    {
+      "id": "tokyo-neon-street",
+      "file": "tokyo-neon-street.jpg",
+      "tags": ["tokyo", "japan", "neon", "signs", "street", "city", "shinjuku", "kabukicho", "urban", "nightlife"],
+      "moods": ["electric", "busy", "cyberpunk", "vibrant"],
+      "time": "night",
+      "credit": { "title": "Colorful neon street signs in Kabukichō, Shinjuku, Tokyo", "author": "Basile Morin", "license": "CC BY-SA 4.0", "url": "https://commons.wikimedia.org/wiki/File:Colorful_neon_street_signs_in_Kabukich%C5%8D,_Shinjuku,_Tokyo.jpg" }
+    },
+    {
+      "id": "tokyo-night-skyline",
+      "file": "tokyo-night-skyline.jpg",
+      "tags": ["tokyo", "japan", "skyline", "rooftop", "city", "skyscrapers", "lights", "view", "aerial"],
+      "moods": ["epic", "calm", "glamorous", "moody"],
+      "time": "night",
+      "credit": { "title": "Minato City, Tokyo, Japan (Night)", "author": "David Kernan", "license": "CC BY 4.0", "url": "https://commons.wikimedia.org/wiki/File:Minato_City,_Tokyo,_Japan_(Night).jpg" }
+    },
+    {
+      "id": "rainy-street-night",
+      "file": "rainy-street-night.jpg",
+      "tags": ["rain", "wet", "street", "city", "europe", "lights", "reflections", "winter"],
+      "moods": ["melancholy", "cozy", "romantic", "noir"],
+      "time": "night",
+      "credit": { "title": "Rainy Vienna street in December, Wollzeile", "author": "Marek Ślusarczyk (Tupungato)", "license": "CC BY 3.0", "url": "https://commons.wikimedia.org/wiki/File:016_Rainy_Vienna_street_in_December_-_Christmas_decorations_of_Wollzeile.jpg" }
+    },
+    {
+      "id": "golden-hour-beach",
+      "file": "golden-hour-beach.jpg",
+      "tags": ["beach", "sand", "river", "boat", "golden hour", "sunset", "warm", "tropical", "water"],
+      "moods": ["warm", "peaceful", "nostalgic", "dreamy"],
+      "time": "golden hour",
+      "credit": { "title": "Careening of a pirogue on a sand beach, at golden hour, Si Phan Don, Laos", "author": "Basile Morin", "license": "CC BY-SA 4.0", "url": "https://commons.wikimedia.org/wiki/File:Careening_of_a_pirogue_on_a_sand_beach,_at_golden_hour,_in_Si_Phan_Don,_Laos.jpg" }
+    },
+    {
+      "id": "mountain-lake",
+      "file": "mountain-lake.jpg",
+      "tags": ["mountains", "snow", "lake", "himalaya", "nepal", "nature", "outdoors", "adventure", "peak"],
+      "moods": ["epic", "fresh", "serene", "heroic"],
+      "time": "day",
+      "credit": { "title": "Mountains in snow, Mountain lake, Chola Valley, Nepal", "author": "Vyacheslav Argenberg", "license": "CC BY 4.0", "url": "https://commons.wikimedia.org/wiki/File:Mountains_in_snow,_Mountain_lake,_Chola_Valley,_Nepal,_Himalayas.jpg" }
+    },
+    {
+      "id": "misty-forest",
+      "file": "misty-forest.jpg",
+      "tags": ["forest", "trees", "fog", "mist", "river", "nature", "autumn", "woods"],
+      "moods": ["mysterious", "quiet", "eerie", "calm"],
+      "time": "morning",
+      "credit": { "title": "Morning fog at some trees by Keravanjoki river in Vantaa, Finland", "author": "Ximonic (Simo Räsänen)", "license": "CC BY 3.0", "url": "https://commons.wikimedia.org/wiki/File:Morning_fog_at_some_trees_by_Keravanjoki_river_in_Vantaa,_Finland,_2021_October.jpg" }
+    },
+    {
+      "id": "desert-dunes",
+      "file": "desert-dunes.jpg",
+      "tags": ["desert", "dunes", "sand", "death valley", "dry", "hot", "landscape"],
+      "moods": ["vast", "lonely", "warm", "minimal"],
+      "time": "day",
+      "credit": { "title": "Mesquite Sand Dunes in Death Valley", "author": "Brocken Inaglory", "license": "CC BY-SA 3.0", "url": "https://commons.wikimedia.org/wiki/File:Mesquite_Sand_Dunes_in_Death_Valley.jpg" }
+    },
+    {
+      "id": "library",
+      "file": "library.jpg",
+      "tags": ["library", "books", "bookshelves", "indoors", "study", "office", "academic"],
+      "moods": ["smart", "cozy", "serious", "calm"],
+      "time": "day",
+      "credit": { "title": "Bookshelves and interior of the library of the Academy for Judiciary", "author": "Szeronine", "license": "CC BY 4.0", "url": "https://commons.wikimedia.org/wiki/File:Bookshelves_and_interior_of_the_library_of_the_Academy_for_Judiciary.jpg" }
+    },
+    {
+      "id": "northern-lights",
+      "file": "northern-lights.jpg",
+      "tags": ["aurora", "northern lights", "sky", "stars", "alaska", "arctic", "green", "night sky"],
+      "moods": ["magical", "awe", "dreamy", "cold"],
+      "time": "night",
+      "credit": { "title": "Aurora borealis over Eielson Air Force Base, Alaska", "author": "U.S. Air Force, Senior Airman Joshua Strang", "license": "Public domain", "url": "https://commons.wikimedia.org/wiki/File:Aurora_borealis_over_Eielson_Air_Force_Base,_Alaska.jpg" }
+    },
+    {
+      "id": "paris-rain-painting",
+      "file": "paris-rain-painting.jpg",
+      "tags": ["paris", "france", "painting", "umbrellas", "rain", "street", "art", "impressionism", "vintage", "classic"],
+      "moods": ["artistic", "elegant", "nostalgic", "romantic"],
+      "time": "day",
+      "credit": { "title": "Paris Street; Rainy Day (1877)", "author": "Gustave Caillebotte", "license": "Public domain", "url": "https://commons.wikimedia.org/wiki/File:Gustave_Caillebotte_-_Paris_Street;_Rainy_Day_-_Google_Art_Project.jpg" }
+    }
+  ],
+  "procedural": [
+    { "id": "neon-rain-city", "tags": ["city", "neon", "rain", "night", "cyberpunk", "tokyo", "rooftop"], "moods": ["electric", "moody"], "time": "night" },
+    { "id": "star-field", "tags": ["space", "stars", "galaxy", "cosmos", "universe", "night sky"], "moods": ["vast", "dreamy"], "time": "night" },
+    { "id": "sunset-gradient", "tags": ["sunset", "sunrise", "golden hour", "sky", "warm", "dusk"], "moods": ["warm", "nostalgic"], "time": "golden hour" },
+    { "id": "studio-backdrop", "tags": ["studio", "portrait", "backdrop", "seamless", "plain", "clean", "professional"], "moods": ["clean", "minimal"], "time": "any" },
+    { "id": "foggy-forest", "tags": ["forest", "fog", "trees", "woods", "mist", "nature"], "moods": ["mysterious", "eerie"], "time": "morning" }
+  ]
+}

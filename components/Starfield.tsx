@@ -35,6 +35,11 @@ export default function Starfield() {
     }));
 
     const draw = () => {
+      // Director mode covers the page with its own canvas; don't spend frames behind it.
+      if (document.body.classList.contains("director-active")) {
+        raf = requestAnimationFrame(draw);
+        return;
+      }
       g.fillStyle = "rgba(8, 0, 20, 0.35)"; // leaves short trails
       g.fillRect(0, 0, w, h);
       const cx = w / 2;

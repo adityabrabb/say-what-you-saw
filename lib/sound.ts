@@ -149,6 +149,16 @@ export const sfx = {
     tone({ freq: 1800, to: 60, dur: 0.38, type: "sawtooth", vol: 0.05 });
     noise(0.18, 0.18, 0, 5000);
   },
+  // Camera shutter: sharp click, mirror slap, second click.
+  shutter: () => {
+    noise(0.04, 0.35, 0, 6000);
+    tone({ freq: 180, to: 60, dur: 0.08, type: "square", vol: 0.06, at: 0.01 });
+    noise(0.05, 0.25, 0.09, 4500);
+  },
+  slate: () => {
+    noise(0.03, 0.3, 0, 3500);
+    tone({ freq: 900, to: 400, dur: 0.06, type: "square", vol: 0.04 });
+  },
   magic: () => arpeggio([659, 880, 1175, 1568], 0.05, "triangle", 0.06),
   error: () => tone({ freq: 160, dur: 0.25, type: "square", vol: 0.06 }),
 };
