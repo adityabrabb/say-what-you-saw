@@ -18,9 +18,11 @@ The app's text boxes are plain inputs. Wispr Flow dictates into them. Do NOT bui
 - **Studio** (the old explainer-video creator) is HIDDEN but KEPT: removed from navigation, still reachable at `/studio`. Don't delete it.
 
 ## What's built and working
-**The Film (`/`, components/film/*, lib/film.ts)**: the whole home page is one short film. Pure black -> click/key -> soft projector click + 24fps whirr + ambient drone (Web Audio, lib/sound.ts `projector`, `drone`, `filmSfx`) -> flicker -> 5-to-1 leader with sweep -> "Say What You Saw" title (cream serif, light cone from top, floor pool + title shadow) -> direction box "roll camera" (fuzzy cue `isRollCue`, button for non-Wispr users) -> "Who's starring tonight?" name -> Act I card (typewriter) -> Recall (only change: `onFinish` prop) -> Act II card -> Director (`film` prop: WRAP ▸ CREDITS, hands over lines/takes/strip/photo credits) -> rolling end credits (photo strip in the middle; download strip, share/download credits card PNG, play again). Look: black, cream Cormorant Garamond titles, one amber accent, 2.39:1 letterbox on cards, film-burn / cut-to-black transitions, NO grain. Corner mute + Select Scene (hidden on very first opening). Progress saved in localStorage `swys-film`; a refresh resumes the scene (sessionStorage marker), a new visit/tab always starts at the opening (name kept). Respects prefers-reduced-motion. The old arcade Landing component is unused.
+**The Film (`/`, components/film/*, lib/film.ts)**: the whole home page is one short film. Pure black -> click/key -> soft projector click + 24fps whirr + ambient drone (Web Audio, lib/sound.ts `projector`, `drone`, `filmSfx`) -> flicker -> 5-to-1 leader with sweep -> "Say What You Saw" title (cream serif, light cone from top, floor pool + title shadow) -> direction box "roll camera" (fuzzy cue `isRollCue`, button for non-Wispr users) -> "Who's starring tonight?" name -> Act I card (typewriter) -> Recall (only change: `onFinish` prop) -> Act II card -> Director (`film` prop; in the film the 4th shot or THAT'S A WRAP freezes the frame and hands over lines/takes/strip/photo credits/freeze/demo) -> **Act III · The Verdict** (see below) -> rolling end credits (photo strip in the middle; download strip, share/download credits card PNG, play again). Look: black, cream Cormorant Garamond titles, one amber accent, 2.39:1 letterbox on cards, film-burn / cut-to-black transitions, NO grain. Corner mute + Select Scene (hidden on very first opening). Progress saved in localStorage `swys-film`; a refresh resumes the scene (sessionStorage marker), a new visit/tab always starts at the opening (name kept). Respects prefers-reduced-motion. The old arcade Landing component is unused.
 
 **Landing (`/`)**: neon arcade theme (pixel font, warp starfield, synthwave grid, CRT scanlines), 3D-ish title with CSS tilt, three.js neon moon (lazy), two arcade buttons RECALL and DIRECTOR, CRT power-off transition. Web Audio sound kit with mute toggle.
+
+**Act III · The Verdict (`components/film/Verdict.tsx`, `lib/verdict/*`, `/api/verdict`)**: the plot twist (you were the suspect). The frozen frame, then the tab title becomes "Suspect Detected" with a blinking red-siren favicon (restored after), fake retro error windows stack up while a fake cursor clicks them, then a ~1s glitch (static, RGB split, warp, detuned tone; the ONLY grain in the film), the typed twist, then a three.js shatter (`lib/verdict/shatter.ts`, lazy, 80 shards, slow-mo, staggered reassembly into the poster's back, spin reveal). The wanted poster is a canvas (`lib/verdict/poster.ts`, 1200x1600: aged paper, sepia still, name, alias, crime, Exhibits A-C quoting real words, tiny reward, GUILTY stamp with thud and shake). No camera: the fake cursor drags a police sketch in, captioned "Suspect refuses to be photographed. Suspicious." Buttons: Download poster (PNG), Appeal (restart Act I), Roll credits. "Skip to the verdict" chip. Reduced motion: no cursor, no 3D, crossfade. The charge comes from `/api/verdict` (text only) with a funny offline fallback. A refresh shows the stamped poster (saved as JPEG in film state).
 
 **Recall / Witness (`/recall`)**: How-to-Play tutorial (first visit), Easy/Medium/Hard (5s/3s/2s flash) with separate pools (11/8/8 hand-made scenes using neon icons, hand-drawn art, backdrops, particles), 3 or 5 rounds, 30s dictation countdown with auto-submit, description -> scene via `/api/generate`, deterministic scoring, reveal with missed/extra rings and names, count-up score, verdicts, confetti, best score in localStorage, end screen with Home / Change settings / Play again.
 
@@ -39,12 +41,14 @@ app/
   api/generate/route.ts   description -> scenes (recall|studio)
   api/edit/route.ts       Studio voice edit -> patch
   api/direct/route.ts     Director line -> shot-settings patch (cache, rate limit, retry, repair, offline)
+  api/verdict/route.ts    Act III case file (text) -> charge sheet {alias, crime, evidence[3], reward} (cache, rate limit, retry, real-quote check, offline)
 components/
   Landing, NeonMoon, Starfield, SoundToggle, PageHeader
   RecallGame, HowToPlay                     (Act 1)
   SceneRenderer, SceneBackground, Art       SVG scene renderer (3 GPU layers), backdrops/particles, hand-drawn art
   Studio, Player                            (hidden Studio)
   director/DirectorStage.tsx                (Act 2 UI + render loop)
+  film/Film.tsx Opening.tsx Cards.tsx Credits.tsx Verdict.tsx   the film shell, opening, cast/act cards, credits, Act III
 lib/
   scene.ts schema.ts engine.ts             scene JSON types, zod validation, animation engine (easing, stagger, camera)
   score.ts                                 deterministic Recall scoring
@@ -61,6 +65,8 @@ lib/
   director/catalog.ts    backgrounds.json types + bestBackground matcher
   director/prompt.ts     Director LLM prompt   director/offline.ts  keyword fallback director
   director/silhouette.ts demo subject          director/strip.ts    photo strip builder
+  film.ts              film state (scenes, saved progress, cue matcher, credits card)
+  verdict/schema.ts offline.ts prompt.ts poster.ts shatter.ts   Act III: zod schemas, fallback charge, prompt, poster canvas, three.js shatter
 public/icons/neon.svg          184-icon neon sprite (Tabler/Lucide/Game Icons) - regenerate with scripts/build-icons.mjs
 public/backgrounds/*.jpg + backgrounds.json   10 Wikimedia Commons photos (CC/PD, credits in json) + 5 procedural ids
 ```
@@ -79,6 +85,7 @@ One object; the model only ever returns a patch; everything is clamped.
 - `POST /api/generate` `{ description, mode: "recall"|"studio" }` -> `{ scenes, engine }` (engine = provider name or "offline")
 - `POST /api/edit` `{ video, instruction, currentScene }` -> `{ video, changes, scenes, summary, engine }`
 - `POST /api/direct` `{ line, settings }` -> `{ patch, note, engine, cached? }`; 12 lines/min per IP (in-memory), 10-min cache keyed by line+settings, one retry with error feedback, then `repairPatch`, then offline keyword director.
+- `POST /api/verdict` `{ name, witnessScore, witnessMax, rounds[{title,truth,said,score}], directorLines[] }` -> `{ alias, crime, evidence[3]{quote,note}, reward, engine }`; 6/min per IP (over the limit returns the offline charge), 10-min cache, one retry, evidence must quote real, unique words.
 
 ## AI providers (lib/providers.ts)
 Chain, first that answers wins (sticky per request): OpenRouter (`OPENROUTER_MODEL`, default `google/gemini-2.5-flash`; on 402 "can only afford N" it retries with fewer tokens) -> Google Gemini direct via OpenAI-compatible endpoint (models `gemini-flash-latest` then `gemini-flash-lite-latest`; pinned `gemini-2.5-flash` is NOT available to new keys) -> OpenRouter `:free` models (picked live from the model list) -> offline engines (no AI). Results from the offline path show an OFFLINE BUILD badge (Recall/Studio) or "Offline director" note.
@@ -106,8 +113,12 @@ Both keys are set locally and on Vercel. OpenRouter credits are low; Gemini is t
 - Headless/no-GPU tests run Director at ~35-60 fps; real browsers are faster. Only tested with a fake webcam so far; Adi's real webcam is the true test.
 - Windows dev: stopping `npm run dev` can orphan the Next process on port 3000; kill it by port before restarting. After changing a module's exports, restart the dev server (HMR serves stale modules).
 - `vercel deploy` once printed a stray `"status": "error"` line while the deployment was Ready.
+- Recall changes are limited to report-only hooks (`onFinish` with `rounds`, `onRound`). `onRound` is not consumed yet (Phase 2 roasts will use it).
+- Act III: if the AI director set a dark backdrop and no person is found, the frozen frame (and shards) is dark. That's real content, not a bug.
 
 ## Next steps
+**THE GRAND PLAN is in `GRAND_PLAN.md` (phases 1-6, rules, open questions). It supersedes the list below; continue from its first unchecked phase.**
+
 1. **Opening sequence**: "camera rolling" intro, slate clap, cast/title cards starring the player (ask for their name once, reuse it in Director overlays and credits).
 2. **Film flow**: Opening -> Act 1 Witness (Recall, unchanged) -> Act 2 Director's Stage, with act title cards between; carry the Witness score into the film.
 3. **End credits** after Act 2: rolling credits listing the director's lines as scenes, takes count, the photo strip, "Directed by <name>, by voice", background photo credits.

@@ -317,3 +317,39 @@ export const filmSfx = {
   accept: () => arpeggio([392, 587, 784], 0.07, "triangle", 0.05),
   nope: () => tone({ freq: 220, to: 180, dur: 0.16, type: "triangle", vol: 0.05 }),
 };
+
+// ---------- Act III: The Verdict ----------
+export const verdictSfx = {
+  // Two-tone police siren sweep.
+  siren: () => {
+    [0, 0.5].forEach((at) => tone({ freq: 640, to: 960, dur: 0.45, type: "triangle", vol: 0.035, at }));
+  },
+  // Retro OS error "ding".
+  ding: () => {
+    tone({ freq: 880, dur: 0.18, type: "sine", vol: 0.06 });
+    tone({ freq: 660, dur: 0.3, type: "sine", vol: 0.05, at: 0.09 });
+  },
+  cursorClick: () => noise(0.015, 0.12, 0, 5000),
+  // Glitch: two detuned saws sagging in pitch plus a burst of static.
+  glitch: (dur = 1) => {
+    tone({ freq: 220, to: 90, dur, type: "sawtooth", vol: 0.045 });
+    tone({ freq: 233, to: 82, dur, type: "sawtooth", vol: 0.04 });
+    noise(dur, 0.09, 0, 7000);
+  },
+  // The twist lands: low hit, then near-silence.
+  hit: () => {
+    tone({ freq: 70, to: 32, dur: 1.4, type: "sine", vol: 0.22 });
+    noise(0.5, 0.12, 0, 900);
+  },
+  // Glass shattering: a crack and a shower of tiny bright shards.
+  shatter: () => {
+    noise(0.12, 0.3, 0, 9000);
+    for (let i = 0; i < 18; i++) tone({ freq: 2400 + Math.random() * 4200, dur: 0.05 + Math.random() * 0.12, type: "sine", vol: 0.012, at: 0.02 + Math.random() * 0.7 });
+  },
+  whoosh: () => whoosh(0.7, 0.1),
+  // Rubber stamp: a dull thud with a paper slap.
+  thud: () => {
+    tone({ freq: 95, to: 40, dur: 0.28, type: "sine", vol: 0.3 });
+    noise(0.07, 0.25, 0, 1400);
+  },
+};

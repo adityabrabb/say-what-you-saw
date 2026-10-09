@@ -65,6 +65,20 @@ export default function Credits({ film, onReplay, reduced }: { film: FilmState; 
             </div>
           ) : null}
 
+          {film.verdict && (
+            <>
+              <h3 className="cr-act">Act III · The Verdict</h3>
+              <Role label="Also known as" value={`“${film.verdict.alias}”`} quote />
+              <Role label="Wanted for" value={film.verdict.crime} />
+              {film.verdict.poster && (
+                <div className="cr-strip">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={film.verdict.poster} alt={`Wanted poster for ${star}`} />
+                </div>
+              )}
+            </>
+          )}
+
           <h3 className="cr-act">Crew</h3>
           <Role label="Seen and told by" value={star} />
           <Role label="Dictation" value="Wispr Flow" />

@@ -72,12 +72,14 @@ interface Slot {
   blur: number;
 }
 
-// What the film carries into the end credits when the director calls a wrap.
+// What the film carries into Act III and the credits when the shoot wraps.
 export interface DirectorWrap {
   lines: string[];
   takes: number;
   strip: Blob | null;
   credits: Credit[];
+  freeze: string | null; // the last frame, frozen for Act III (JPEG data URL)
+  demo: boolean;
 }
 
 export default function DirectorStage({ film }: { film?: { onWrap: (w: DirectorWrap) => void } } = {}) {
@@ -107,6 +109,7 @@ export default function DirectorStage({ film }: { film?: { onWrap: (w: DirectorW
     slotB: null as Slot | null,
     mixStart: 0,
     capture: false,
+    freezeNext: false,
     frames: [] as HTMLCanvasElement[],
     lines: [] as string[],
     lastStrip: null as Blob | null,
@@ -355,14 +358,27 @@ export default function DirectorStage({ film }: { film?: { onWrap: (w: DirectorW
           sfx.shutter();
           if (n >= STRIP_SIZE) {
             const batch = e.frames.splice(0, STRIP_SIZE);
-            buildPhotoStrip(batch, e.lines.filter((l) => !SHOT.test(l.toLowerCase())))
-              .then((blob) => {
-                e.lastStrip = blob;
-                setStrip(URL.createObjectURL(blob));
-                setShots(0);
-              })
-              .catch(() => {});
+            const strip = buildPhotoStrip(batch, e.lines.filter((l) => !SHOT.test(l.toLowerCase()))).then((blob) => (e.lastStrip = blob));
+            // In the film, the fourth shot is where Act III freezes the frame.
+            if (film) void strip.catch(() => null).then(() => wrapRef.current(shot));
+            else
+              strip
+                .then((blob) => {
+                  setStrip(URL.createObjectURL(blob));
+                  setShots(0);
+                })
+                .catch(() => {});
           }
+        }
+
+        // WRAP before four shots: freeze whatever is on screen now.
+        if (e.freezeNext) {
+          e.freezeNext = false;
+          const still = document.createElement("canvas");
+          still.width = 1280;
+          still.height = 720;
+          still.getContext("2d")!.drawImage(canvasRef.current!, 0, 0, 1280, 720);
+          wrapRef.current(still);
         }
 
         // Once a second, let tracking trade resolution for speed on slow machines.
@@ -437,16 +453,25 @@ export default function DirectorStage({ film }: { film?: { onWrap: (w: DirectorW
     }
   };
 
-  // Film mode: hand the shoot to the end credits. Leftover shots become a short strip of their own.
+  // Film mode: hand the shoot (and the frozen last frame) to Act III. Leftover shots become a short strip.
   const [wrapping, setWrapping] = useState(false);
-  const wrap = async () => {
-    if (!film || wrapping) return;
+  const wrapped = useRef(false);
+  const wrap = async (still: HTMLCanvasElement) => {
+    if (!film || wrapped.current) return;
+    wrapped.current = true;
     setWrapping(true);
     const e = eng.current;
     const lines = e.lines.filter((l) => !SHOT.test(l.toLowerCase()) && !UNDO.test(l.toLowerCase().replace(/[.!?,;:]+$/g, "").trim()));
     let strip = e.lastStrip;
     if (e.frames.length) strip = await buildPhotoStrip(e.frames.slice(-STRIP_SIZE), lines).catch(() => strip);
-    film.onWrap({ lines, takes: take, strip, credits: e.credits });
+    film.onWrap({ lines, takes: take, strip, credits: e.credits, freeze: still.toDataURL("image/jpeg", 0.85), demo: e.demo });
+  };
+  const wrapRef = useRef(wrap);
+  wrapRef.current = wrap;
+  const callWrap = () => {
+    if (wrapping) return;
+    setWrapping(true);
+    eng.current.freezeNext = true;
   };
 
   const fullscreen = () => {
@@ -488,8 +513,8 @@ export default function DirectorStage({ film }: { film?: { onWrap: (w: DirectorW
         <>
           <div className="director-top">
             {film ? (
-              <button className="dir-chip btn wrap" onClick={() => void wrap()} disabled={wrapping}>
-                {wrapping ? "WRAPPING…" : "WRAP ▸ CREDITS"}
+              <button className="dir-chip btn wrap" onClick={callWrap} disabled={wrapping}>
+                {wrapping ? "WRAPPING…" : "THAT'S A WRAP ▸"}
               </button>
             ) : (
               <Link href="/" className="dir-chip" onClick={() => sfx.back()}>
@@ -584,14 +609,9 @@ export default function DirectorStage({ film }: { film?: { onWrap: (w: DirectorW
                   <button className="ghost" onClick={() => setStrip(null)}>
                     Keep shooting
                   </button>
-                  <a className={film ? "ghost strip-dl" : "primary strip-dl"} href={strip} download={`director-strip-${Date.now()}.png`}>
+                  <a className="primary strip-dl" href={strip} download={`director-strip-${Date.now()}.png`}>
                     Download PNG
                   </a>
-                  {film && (
-                    <button className="primary" onClick={() => void wrap()} disabled={wrapping}>
-                      Roll credits ▸
-                    </button>
-                  )}
                 </div>
               </div>
             </div>

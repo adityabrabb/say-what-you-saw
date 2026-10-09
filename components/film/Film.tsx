@@ -3,8 +3,9 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import RecallGame, { type RecallFinish } from "@/components/RecallGame";
+import Verdict from "./Verdict";
 import type { DirectorWrap } from "@/components/director/DirectorStage";
-import { blobToJpeg, FRESH, loadFilm, saveFilm, type FilmState, type SceneId } from "@/lib/film";
+import { blobToJpeg, FRESH, loadFilm, saveFilm, type FilmState, type SceneId, type VerdictResult } from "@/lib/film";
 import { drone, filmSfx, isMuted, onMuteChange, projector, setMuted } from "@/lib/sound";
 import { ActCard, Cast } from "./Cards";
 import Credits from "./Credits";
@@ -13,14 +14,15 @@ import Opening from "./Opening";
 // WebGL + MediaPipe only load when the film reaches Act II.
 const DirectorStage = dynamic(() => import("@/components/director/DirectorStage"), { ssr: false });
 
-type Cut = "burn" | "cut";
-const CUT_MS: Record<Cut, [number, number]> = { burn: [700, 1500], cut: [180, 700] }; // [swap scene at, end]
-const DRONE: Record<SceneId, number> = { opening: 1, cast: 1, "act1-card": 1, act1: 0.3, "act2-card": 1, act2: 0.2, credits: 0.8 };
+type Cut = "burn" | "cut" | "none";
+const CUT_MS: Record<Exclude<Cut, "none">, [number, number]> = { burn: [700, 1500], cut: [180, 700] }; // [swap scene at, end]
+const DRONE: Record<SceneId, number> = { opening: 1, cast: 1, "act1-card": 1, act1: 0.3, "act2-card": 1, act2: 0.2, act3: 0.15, credits: 0.8 };
 
 const MENU: { scene: SceneId; label: string }[] = [
   { scene: "opening", label: "Opening titles" },
   { scene: "act1-card", label: "Act I · The Witness" },
   { scene: "act2-card", label: "Act II · The Director's Stage" },
+  { scene: "act3", label: "Act III · The Verdict" },
   { scene: "credits", label: "End credits" },
 ];
 
@@ -85,6 +87,12 @@ export default function Film() {
     (next: SceneId, kind: Cut = "burn", patch: Partial<FilmState> = {}) => {
       timers.current.forEach(clearTimeout);
       setMenu(false);
+      // A hard cut with no transition: Act III has to look like the frame simply froze.
+      if (kind === "none") {
+        setFx(null);
+        update({ ...patch, scene: next });
+        return;
+      }
       const k = reduced ? "cut" : kind;
       const [at, end] = CUT_MS[k];
       if (k === "burn") filmSfx.burn();
@@ -105,11 +113,13 @@ export default function Film() {
   const wrap = useCallback(
     async (w: DirectorWrap) => {
       const strip = w.strip ? await blobToJpeg(w.strip).catch(() => null) : null;
-      go("credits", "burn", { director: { lines: w.lines, takes: w.takes, credits: w.credits, strip } });
+      go("act3", "none", { director: { lines: w.lines, takes: w.takes, credits: w.credits, strip, freeze: w.freeze, demo: w.demo }, verdict: null });
     },
     [go]
   );
-  const replay = useCallback(() => go("act1-card", "burn", { witness: null, director: null }), [go]);
+  const replay = useCallback(() => go("act1-card", "burn", { witness: null, director: null, verdict: null }), [go]);
+  const verdict = useCallback((v: VerdictResult) => update({ verdict: v }), [update]);
+  const toCredits = useCallback(() => go("credits", "burn"), [go]);
 
   if (!film) return <div className="film-root" />;
 
@@ -137,6 +147,7 @@ export default function Film() {
       )}
       {film.scene === "act2-card" && <ActCard act="Act II" title="The Director's Stage" lines={ACT2} onDone={act2Done} reduced={reduced} />}
       {film.scene === "act2" && <DirectorStage film={{ onWrap: wrap }} />}
+      {film.scene === "act3" && <Verdict film={film} reduced={reduced} onVerdict={verdict} onAppeal={replay} onCredits={toCredits} />}
       {film.scene === "credits" && <Credits film={film} onReplay={replay} reduced={reduced} />}
 
       {chrome && (
@@ -154,7 +165,7 @@ export default function Film() {
                   key={m.scene}
                   role="menuitem"
                   className={film.scene === m.scene || film.scene === m.scene.replace("-card", "") ? "current" : ""}
-                  onClick={() => go(m.scene, "cut")}
+                  onClick={() => go(m.scene, "cut", m.scene === "act3" ? { verdict: null } : {})}
                 >
                   {m.label}
                 </button>

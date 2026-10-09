@@ -1,9 +1,11 @@
 "use client";
 
+import type { RecallRound } from "@/components/RecallGame";
 import type { Credit } from "@/lib/director/catalog";
+import type { Charge } from "@/lib/verdict/schema";
 
 // The film's running order. Progress is saved after every cut so a refresh resumes the same scene.
-export const SCENES = ["opening", "cast", "act1-card", "act1", "act2-card", "act2", "credits"] as const;
+export const SCENES = ["opening", "cast", "act1-card", "act1", "act2-card", "act2", "act3", "credits"] as const;
 export type SceneId = (typeof SCENES)[number];
 
 export interface WitnessResult {
@@ -11,6 +13,7 @@ export interface WitnessResult {
   max: number;
   best: number;
   bestLine: string;
+  rounds?: RecallRound[];
 }
 
 export interface DirectorResult {
@@ -18,6 +21,13 @@ export interface DirectorResult {
   takes: number;
   credits: Credit[];
   strip: string | null; // JPEG data URL, so it survives a refresh
+  freeze?: string | null; // the frame Act III freezes on (JPEG data URL)
+  demo?: boolean; // shot without a real camera
+}
+
+export interface VerdictResult extends Charge {
+  engine: string;
+  poster: string | null; // stamped poster, JPEG data URL
 }
 
 export interface FilmState {
@@ -26,10 +36,11 @@ export interface FilmState {
   seen: boolean; // has watched the opening once: unlocks Select Scene from the start
   witness: WitnessResult | null;
   director: DirectorResult | null;
+  verdict?: VerdictResult | null;
 }
 
 const KEY = "swys-film";
-export const FRESH: FilmState = { scene: "opening", name: "", seen: false, witness: null, director: null };
+export const FRESH: FilmState = { scene: "opening", name: "", seen: false, witness: null, director: null, verdict: null };
 
 let resuming: boolean | null = null;
 
@@ -53,9 +64,9 @@ export function saveFilm(s: FilmState) {
   try {
     localStorage.setItem(KEY, JSON.stringify(s));
   } catch {
-    // Quota or private mode: retry without the strip image, then give up quietly.
+    // Quota or private mode: retry without the big images, then give up quietly.
     try {
-      localStorage.setItem(KEY, JSON.stringify({ ...s, director: s.director && { ...s.director, strip: null } }));
+      localStorage.setItem(KEY, JSON.stringify({ ...s, director: s.director && { ...s.director, strip: null, freeze: null } }));
     } catch {}
   }
 }
@@ -150,7 +161,8 @@ export async function buildCreditsCard(s: FilmState): Promise<Blob> {
   g.fillStyle = beam;
   g.fillRect(0, 0, W, H);
 
-  const strip = s.director?.strip ? await loadImage(s.director.strip).catch(() => null) : null;
+  const art = s.verdict?.poster ?? s.director?.strip;
+  const strip = art ? await loadImage(art).catch(() => null) : null;
   const stripW = strip ? 300 : 0;
   const stripH = strip ? Math.min(H - 220, (strip.height / strip.width) * stripW) : 0;
   const left = 80;
@@ -196,6 +208,7 @@ export async function buildCreditsCard(s: FilmState): Promise<Blob> {
   };
 
   block("Starring", starName(s), 56);
+  if (s.verdict) block("Also known as", `“${s.verdict.alias}”`, 36);
   const w = s.witness;
   block("Witness score", w ? `${w.score} / ${w.max}   ·   best ${w.best}` : "Did not testify");
   if (w?.bestLine) block("Best line", `“${w.bestLine}”`, 32);

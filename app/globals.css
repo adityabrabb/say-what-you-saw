@@ -845,6 +845,7 @@ body.film-on .director-top { right: 240px; }
   .film-btn { padding: 11px 14px; }
   .act-label { padding-right: 0; margin-top: 44px; font-size: 18px; }
   body.film-on .director-top { right: 14px; top: 52px; }
+  body.film-on .dir-status { top: 132px; }
   .film-next { flex-direction: column; align-items: stretch; text-align: center; }
   .credits-actions .film-btn { flex: 1 1 45%; font-size: 11px; }
 }
@@ -967,3 +968,79 @@ body.film-arcade .grid-floor { opacity: 0.38; animation: fade-in 1.8s ease both;
 }
 .slate-body { background: rgba(14, 6, 24, 0.84); border-color: rgba(255, 43, 214, 0.3); box-shadow: 0 0 26px rgba(255, 43, 214, 0.16); }
 @media (prefers-reduced-motion: reduce) { .dir-synth, .dir-synth::before { animation: none; } }
+
+/* ================= ACT III · THE VERDICT ================= */
+.verdict-root { position: fixed; inset: 0; z-index: 10; background: #050307; overflow: hidden; }
+.verdict-root.shake { animation: verdict-shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+@keyframes verdict-shake {
+  10%, 90% { transform: translate(-2px, 1px); }
+  20%, 80% { transform: translate(5px, -3px); }
+  30%, 50%, 70% { transform: translate(-9px, 4px) rotate(-0.4deg); }
+  40%, 60% { transform: translate(9px, -2px) rotate(0.4deg); }
+}
+
+/* The frozen frame: shown exactly like the live canvas was, so the freeze is seamless */
+.verdict-frame { position: absolute; inset: 0; transition: filter 0.8s ease; }
+.verdict-frame img, .verdict-nofootage { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.verdict-nofootage { display: grid; place-items: center; background: #0b0710; color: var(--cream-faint); font: 600 28px "Courier New", monospace; letter-spacing: 0.2em; }
+.verdict-frame.dim { filter: brightness(0.22) saturate(0.6); }
+.verdict-glitch { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; animation: verdict-warp 0.18s steps(2) infinite; }
+@keyframes verdict-warp {
+  0% { transform: skewX(0) scaleY(1); }
+  50% { transform: skewX(-2.5deg) scaleY(1.02) translateX(6px); }
+  100% { transform: skewX(1.5deg) scaleY(0.99) translateX(-4px); }
+}
+.verdict-glitch-still { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255, 0, 60, 0.18), rgba(0, 240, 255, 0.18)); mix-blend-mode: screen; }
+
+/* Fake system error windows (retro OS chrome, never real dialogs) */
+.err-win {
+  position: absolute; z-index: 3; font: 13px Tahoma, Verdana, "Segoe UI", sans-serif; color: #000; background: #c3c3c3;
+  border: 2px solid; border-color: #fff #404040 #404040 #fff; box-shadow: 1px 1px 0 #000, 6px 8px 24px rgba(0, 0, 0, 0.5);
+  animation: err-pop 0.14s ease-out both;
+}
+@keyframes err-pop { from { transform: scale(0.92); opacity: 0; } to { transform: none; opacity: 1; } }
+.err-title { display: flex; justify-content: space-between; align-items: center; padding: 3px 4px 3px 6px; background: linear-gradient(90deg, #0a246a, #a6caf0); color: #fff; font-weight: 700; }
+.err-x { width: 16px; height: 14px; display: grid; place-items: center; font-size: 10px; color: #000; background: #c3c3c3; border: 1px solid; border-color: #fff #404040 #404040 #fff; }
+.err-body { display: flex; gap: 12px; align-items: center; padding: 14px 12px 8px; }
+.err-body p { margin: 0; line-height: 1.35; }
+.err-icon { flex: none; width: 32px; height: 32px; border-radius: 50%; background: #e0201a; color: #fff; display: grid; place-items: center; font: 700 16px Tahoma, sans-serif; box-shadow: inset -2px -2px 0 rgba(0, 0, 0, 0.25); }
+.err-buttons { display: flex; gap: 6px; justify-content: flex-end; padding: 6px 10px 10px; }
+.err-btn { min-width: 64px; padding: 4px 10px; text-align: center; background: #c3c3c3; border: 2px solid; border-color: #fff #404040 #404040 #fff; }
+
+/* The fake cursor */
+.fake-cursor { position: absolute; left: 0; top: 0; z-index: 6; pointer-events: none; transition: transform 0.7s cubic-bezier(0.45, 0.05, 0.25, 1); filter: drop-shadow(1px 2px 1px rgba(0, 0, 0, 0.4)); }
+.fake-cursor svg.clicking { animation: cursor-click 0.22s ease-out; }
+@keyframes cursor-click { 50% { transform: scale(0.8); } }
+
+/* The twist */
+.twist { position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px; text-align: center; }
+.twist-line { margin: 0; font-family: var(--font-serif-stack); color: var(--cream); line-height: 1.1; }
+.twist-line.l0 { font-size: clamp(16px, 2vw, 22px); letter-spacing: 0.3em; text-transform: uppercase; color: var(--amber); font-family: var(--font-ui); min-height: 1.2em; }
+.twist-line.l1 { font-style: italic; font-size: clamp(28px, 5vw, 60px); min-height: 1.1em; }
+.twist-line.l2 { font-weight: 700; font-size: clamp(38px, 7.5vw, 104px); min-height: 1.1em; text-shadow: 0 0 22px rgba(255, 60, 40, 0.45), 0 0 80px rgba(255, 43, 214, 0.25); }
+
+/* Shatter (three.js) and the poster */
+.shatter-canvas { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.verdict-poster { position: absolute; z-index: 3; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7), 0 0 60px rgba(255, 170, 80, 0.12); }
+.beat-poster .verdict-poster, .beat-final .verdict-poster { animation: fade-in 0.35s ease both; }
+.verdict-poster > img:first-child { display: block; width: 100%; height: 100%; }
+.verdict-drag { position: absolute; z-index: 1; transition: transform 1.2s cubic-bezier(0.5, 0, 0.2, 1); box-shadow: 4px 8px 22px rgba(0, 0, 0, 0.5); }
+.verdict-stamp {
+  position: absolute; z-index: 2; height: auto; pointer-events: none; mix-blend-mode: multiply;
+  transform: translate(-50%, -50%) rotate(var(--rot)); animation: stamp-slam 0.22s cubic-bezier(0.2, 0.6, 0.3, 1) both;
+}
+.verdict-stamp.still { animation: none; }
+@keyframes stamp-slam {
+  from { transform: translate(-50%, -50%) rotate(var(--rot)) scale(2.6); opacity: 0; }
+  70% { opacity: 1; }
+  to { transform: translate(-50%, -50%) rotate(var(--rot)) scale(1); opacity: 1; }
+}
+.verdict-actions { position: absolute; left: 0; right: 0; z-index: 5; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 0 16px; animation: fade-up 0.5s ease 0.2s both; }
+.verdict-skip { position: absolute; right: 12px; bottom: 12px; z-index: 7; animation: fade-in 0.4s ease both; }
+@media (max-width: 640px) {
+  .verdict-actions .film-btn { flex: 1 1 40%; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .verdict-root.shake, .verdict-glitch, .err-win, .verdict-actions, .verdict-poster { animation: none !important; }
+  .verdict-frame { transition: none; }
+}

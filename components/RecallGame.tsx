@@ -182,15 +182,30 @@ function FinalTotal({ total, celebrateIt }: { total: number; celebrateIt: boolea
   return <>{shown}</>;
 }
 
-// What the film needs from a finished game. Gameplay never depends on it.
+// What the film reads from the game. Report-only hooks: gameplay, timing and scoring never depend on them.
+export interface RecallRound {
+  title: string;
+  truth: string; // what was really in the scene, in words
+  said: string;
+  score: number;
+}
+
 export interface RecallFinish {
   score: number;
   max: number;
   best: number;
   bestLine: string;
+  rounds: RecallRound[];
 }
 
-export default function RecallGame({ onFinish }: { onFinish?: (r: RecallFinish) => void } = {}) {
+const roundReport = (r: RoundResult): RecallRound => ({
+  title: r.target.title,
+  truth: r.target.objects.map(describeObject).join(", "),
+  said: r.said,
+  score: r.score?.total ?? 0,
+});
+
+export default function RecallGame({ onFinish, onRound }: { onFinish?: (r: RecallFinish) => void; onRound?: (r: RecallRound, index: number) => void } = {}) {
   const [phase, setPhase] = useState<Phase>("pick");
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [rounds, setRounds] = useState<number>(5);
@@ -207,6 +222,20 @@ export default function RecallGame({ onFinish }: { onFinish?: (r: RecallFinish) 
   descriptionRef.current = description;
 
   useEffect(() => setBest(readBest(rounds, difficulty)), [rounds, difficulty]);
+
+  // Report each round once, when its score (or its failure) is known.
+  const reported = useRef(new Set<string>());
+  useEffect(() => {
+    if (!onRound) return;
+    results.forEach((r, i) => {
+      const key = `${gameId.current}:${i}`;
+      const submitted = i < results.length - 1 || phase === "result" || phase === "final";
+      const settled = !!r.score || !!r.error || !r.said;
+      if (reported.current.has(key) || !submitted || !settled) return;
+      reported.current.add(key);
+      onRound(roundReport(r), i);
+    });
+  }, [results, phase, onRound]);
 
   // First visit: show How to Play before the first game.
   useEffect(() => {
@@ -286,7 +315,7 @@ export default function RecallGame({ onFinish }: { onFinish?: (r: RecallFinish) 
     }
     setPhase("final");
     const top = results.reduce<RoundResult | null>((a, r) => (r.said && (!a || (r.score?.total ?? 0) > (a.score?.total ?? 0)) ? r : a), null);
-    onFinish?.({ score: total, max: rounds * 100, best: Math.max(best, total), bestLine: top?.said ?? "" });
+    onFinish?.({ score: total, max: rounds * 100, best: Math.max(best, total), bestLine: top?.said ?? "", rounds: results.map(roundReport) });
   };
 
   // Sound cues: a beep per countdown number, ticks while describing, alarms in the last 5 seconds.
