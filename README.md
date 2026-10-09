@@ -4,7 +4,10 @@
 
 Live: **https://say-what-you-saw.vercel.app**
 
-Say What You Saw turns what you *say* into animated scenes. Describe something out loud and it becomes a moving, neon-lit animation. Or flip it around: a scene flashes on screen, vanishes, and you have to describe what you saw from memory. The closer your words rebuild the original, the higher you score.
+Say What You Saw is a **short film you star in, directed by your voice**. It's played like a game:
+
+- **Act 1 · Witness:** a scene flashes on screen and vanishes. You have to describe what you saw from memory, and the closer your words rebuild the original, the higher you score.
+- **Act 2 · The Director's Stage:** your webcam puts you in the shot. Speak a direction and the world around you changes live: the location, the light on your face, the colour grade, film grain, a moon orbiting your head, your name in gold under your chin. Then you call "freeze" and walk away with a film photo strip.
 
 Your voice isn't a remote control here. It's the skill being tested.
 
@@ -12,9 +15,9 @@ Built for the Hacker House Goa 2026 × Wispr Flow challenge, and built **entirel
 
 ---
 
-## The two modes
+## The film
 
-### Recall (the game)
+### Act 1 · Witness (Recall, `/recall`)
 
 1. A **How to Play** tutorial with live mini-demos opens on your first visit.
 2. Pick a difficulty and 3 or 5 rounds:
@@ -27,7 +30,29 @@ Built for the Hacker House Goa 2026 × Wispr Flow challenge, and built **entirel
 6. **Reveal:** your scene sits next to the original. Things you missed get pulsing red rings and are named ("Missed: robot, dice, coin"), and things you invented get yellow rings. The score counts up and settles, each category bar fills, and you get a one-line verdict ("Photographic memory. Are you a camera?" … "The scene is filing a missing persons report.").
 7. Running total, win jingle or loss buzzer, screen flashes and shakes, confetti on high scores, and a best score saved per difficulty and round count.
 
-### Studio (the creator)
+### Act 2 · The Director's Stage (`/director`)
+
+1. **"The camera is now on you."** Allow your camera (1280×720, mirrored, fullscreen), or play with a built-in demo silhouette if you don't have one. Your video never leaves your device.
+2. The shot opens **clean**: just you, no filters. Everything else happens when you say so.
+3. Dictate a direction into the film slate: "Put me on a Tokyo rooftop at night with neon rain", "golden hour, warm light from the left", "black and white noir, heavy grain", "make the moon orbit my head", "write ADI under my chin in gold", "give me gold teeth and a halo".
+4. The AI returns a small change to the shot, and every change **eases in over a second**, so the picture never freezes or jumps while it thinks. Each line shows as a director's note with a **TAKE** counter.
+5. **"Freeze"**, **"click"** or **"take the shot"** captures a frame with a flash and shutter sound. After four shots you get a **35mm photo strip** (sprocket holes, frame numbers, orange date stamp, "Directed by voice") to download as a PNG.
+6. **"Cut"**, **"go back"** or **"undo"** reverts to the previous setup.
+
+How it works: **MediaPipe** cuts you out of the background (selfie segmentation, feathered and smoothed) and tracks your face (head top, forehead, eyes, nose, mouth, chin, cheeks). Everything is drawn in **one WebGL pass**, back to front:
+1. background (a real photo, one of five procedural scenes, or your own room blurred)
+2. you
+3. a key light shaped around your face, plus rim light
+4. the colour grade
+5. overlays that stick to your face (and pass behind your head when they orbit)
+6. film grain
+7. light leaks
+
+The whole look is one small settings object with clamped ranges, so the AI can only ever nudge it, never break it.
+
+### Studio (hidden, still at `/studio`)
+
+The original explainer-video creator, kept but out of the navigation:
 
 - Type or dictate any explanation ("Bees collect nectar and bring it back to the hive…") and press **Generate**. You get a 1–3 scene animated explainer designed like a motion graphic: a fitting backdrop, 6–12 layered objects, labels and arrows that explain, most things animated, and a slow camera move.
 - **Showcase bar:** three hand-made explainers drawn with detailed illustrations: a **solar eclipse**, the **water cycle** and a **rocket launch**.
@@ -78,11 +103,14 @@ Things you didn't mention count as zero everywhere, so naming half the scene can
 - **Fallback chain:** OpenRouter → **Google Gemini** (free tier) → OpenRouter free models → an **offline keyword engine** that builds scenes and applies common edits with no AI at all, shown as **OFFLINE BUILD**
 - **Game feel:** **Web Audio API** chiptune sounds (all synthesised, no audio files), **Motion** for counters, **canvas-confetti**, **three.js** for the low-poly neon moon on the landing screen
 - **Arcade theme:** Press Start 2P and Chakra Petch fonts, warp star field, synthwave grid, CRT scan lines and power-on/off transitions
+- **Director's Stage:** **MediaPipe Tasks Vision** (selfie segmenter on a 256×144 copy with bicubic feathering, face landmarker), a single **WebGL2** shader for every layer, 9 grade presets, 5 procedural backgrounds, 10 photo backgrounds from **Wikimedia Commons** (CC / public domain, credited on screen), a 2D overlay layer using the same neon icons, Canvas photo strips. The AI route `/api/direct` has caching, rate limiting, one retry, patch repair and an offline keyword director.
 
 ```
-app/            pages (landing, /recall, /studio) and API routes (/api/generate, /api/edit)
-components/     SceneRenderer, SceneBackground, Art, Player, RecallGame, HowToPlay, Studio, NeonMoon…
-lib/            scene schema, engine, scoring, patching, generation, providers, offline engine, icons, sounds
+app/            pages (landing, /recall, /director, /studio) and API routes (/api/generate, /api/direct, /api/edit)
+components/     RecallGame, HowToPlay, director/DirectorStage, SceneRenderer, SceneBackground, Art, Studio, NeonMoon…
+lib/            scene schema, engine, scoring, generation, providers, offline engines, icons, sounds
+lib/director/   shot settings schema, WebGL renderer, tracking, overlays, grades, prompt, photo strip
+public/         neon icon sprite, background photos + backgrounds.json
 scripts/        build-icons.mjs (regenerates the neon icon sprite)
 ```
 

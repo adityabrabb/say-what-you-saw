@@ -75,9 +75,11 @@ export type ShotSettings = z.infer<typeof settingsSchema>;
 
 export const DEFAULT_SETTINGS: ShotSettings = {
   background: { type: "camera", id: "camera", blur: 0, color: "#8a8f9c" },
-  grade: { preset: "natural", exposure: 0, contrast: 1, saturation: 1, temperature: 0, tint: 0, fade: 0, vignette: 0.25 },
+  // The shot opens completely clean: the raw camera, no grade, grain, light or vignette.
+  // Effects only appear once the director asks for them.
+  grade: { preset: "natural", exposure: 0, contrast: 1, saturation: 1, temperature: 0, tint: 0, fade: 0, vignette: 0 },
   light: { angle: 150, color: "#fff1dc", intensity: 0, softness: 0.6, rim: 0 },
-  grain: { amount: 0.12, size: 1.5 },
+  grain: { amount: 0, size: 1.5 },
   leaks: { amount: 0, hue: 30 },
   face: { teeth: "none" },
   overlays: [],

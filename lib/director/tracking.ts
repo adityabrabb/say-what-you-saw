@@ -88,7 +88,7 @@ export class Tracker {
         const data = m.getAsFloat32Array();
         // Temporal smoothing kills edge flicker; then quantise for the GPU.
         for (let i = 0; i < data.length && i < this.smooth.length; i++) {
-          this.smooth[i] = this.smooth[i] * 0.35 + data[i] * 0.65;
+          this.smooth[i] = this.smooth[i] * 0.5 + data[i] * 0.5; // steadier edges, still responsive
           this.mask[i] = this.smooth[i] * 255;
         }
         maskUpdated = true;

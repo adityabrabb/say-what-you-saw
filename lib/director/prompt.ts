@@ -7,6 +7,7 @@ export function directorPrompt(catalog: Catalog): string {
   return `You are the cinematographer on a live webcam shoot. The director speaks one line; you change the shot.
 Reply with JSON only: {"patch": {...}, "note": "<= 8 word acknowledgement"}.
 The patch contains ONLY what changes. Never repeat unchanged fields. Keep it small.
+The shot starts as the clean, unfiltered camera. Only add grain, vignette, leaks, grades or light when the director asks for them or the requested look clearly needs them.
 
 Settings shape (all optional in a patch):
 - background: {"type": "camera"|"image"|"procedural", "id": string, "blur": 0-1, "color": "#rrggbb" (studio-backdrop tint)}

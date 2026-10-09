@@ -147,6 +147,36 @@ vec3 background(float type, float blur, sampler2D img, vec2 uv) {
 
 float maskAt(vec2 v) { return uUseAlpha > 0.5 ? texture(uVideo, v).a : texture(uMask, v).r; }
 
+// Bicubic (B-spline) mask lookup from 4 bilinear taps: removes the stair-steps you get
+// from stretching a 256x144 mask over a 1280x720 frame.
+float maskCubic(vec2 uv) {
+  if (uUseAlpha > 0.5) return texture(uVideo, uv).a;
+  vec2 res = 1.0 / uMaskTexel;
+  vec2 st = uv * res - 0.5;
+  vec2 i = floor(st);
+  vec2 f = st - i;
+  vec2 f2 = f * f, f3 = f2 * f;
+  vec2 w0 = (1.0 - 3.0 * f + 3.0 * f2 - f3) / 6.0;
+  vec2 w1 = (4.0 - 6.0 * f2 + 3.0 * f3) / 6.0;
+  vec2 w2 = (1.0 + 3.0 * f + 3.0 * f2 - 3.0 * f3) / 6.0;
+  vec2 w3 = f3 / 6.0;
+  vec2 g0 = w0 + w1, g1 = w2 + w3;
+  vec2 h0 = (w1 / g0 - 1.0 + i + 0.5) * uMaskTexel;
+  vec2 h1 = (w3 / g1 + 1.0 + i + 0.5) * uMaskTexel;
+  return g0.y * (g0.x * texture(uMask, vec2(h0.x, h0.y)).r + g1.x * texture(uMask, vec2(h1.x, h0.y)).r)
+       + g1.y * (g0.x * texture(uMask, vec2(h0.x, h1.y)).r + g1.x * texture(uMask, vec2(h1.x, h1.y)).r);
+}
+
+// Feathered matte: bicubic centre plus a ring of 8 soft samples (~2 mask texels out).
+float softMask(vec2 v) {
+  vec2 r = uMaskTexel * 2.2;
+  float s = maskCubic(v) * 4.0;
+  s += maskAt(v + vec2(r.x, 0.0)) + maskAt(v - vec2(r.x, 0.0)) + maskAt(v + vec2(0.0, r.y)) + maskAt(v - vec2(0.0, r.y));
+  vec2 d = r * 0.7071;
+  s += maskAt(v + d) + maskAt(v - d) + maskAt(v + vec2(d.x, -d.y)) + maskAt(v + vec2(-d.x, d.y));
+  return s / 12.0;
+}
+
 void main() {
   vec2 uv = vUv;
   vec2 vuv = videoUv(uv);
@@ -160,8 +190,8 @@ void main() {
   vec2 o = uMaskTexel * 1.6;
   float mx1 = maskAt(vuv + vec2(o.x, 0.0)), mx0 = maskAt(vuv - vec2(o.x, 0.0));
   float my1 = maskAt(vuv + vec2(0.0, o.y)), my0 = maskAt(vuv - vec2(0.0, o.y));
-  float mRaw = (maskAt(vuv) * 4.0 + mx1 + mx0 + my1 + my0) / 8.0;
-  float m = smoothstep(0.32, 0.72, mRaw);
+  // Soft, smooth edge that sits just inside the body so no background halo leaks in.
+  float m = smoothstep(0.42, 0.78, softMask(vuv));
   float edge = m * (1.0 - m) * 4.0;
   vec2 grad = vec2(mx1 - mx0, my0 - my1); // points into the person (screen space, y up)
   if (uMirror > 0.5) grad.x = -grad.x;
@@ -178,7 +208,7 @@ void main() {
   float body = clamp(dot((uv - fc) / max(fr.y * 3.0, 0.05) * vec2(1.0, -1.0), uLightDir) * 0.5 + 0.5, 0.0, 1.0);
   float lit = clamp(mix(body * 0.75, ndl, inFace), 0.0, 1.0);
   float amt = uLightInt * lit * m;
-  float shade = uLightInt * (1.0 - lit) * 0.32 * m;
+  float shade = uLightInt * (1.0 - lit) * 0.2 * m; // gentle fall-off on the shadow side, flattering not harsh
   person = person * (1.0 - shade) + person * uLightColor * amt * 0.85 + uLightColor * amt * 0.05;
   person += person * uLightColor * inFace * uLightInt * 0.12; // lift the inside of the face
   float rim = edge * max(dot(normalize(-grad + 1e-5), uLightDir), 0.0) * uRim * 1.6;
