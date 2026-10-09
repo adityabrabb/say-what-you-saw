@@ -25,6 +25,7 @@ export function Cast({ initial, onDone, reduced }: { initial: string; onDone: (n
   return (
     <div className="letterbox">
       <div className="frame">
+        <div className="synth-floor" aria-hidden />
         <div className="card-stage">
           {star === null ? (
             <form className="cast-form" onSubmit={submit}>
@@ -88,6 +89,7 @@ export function ActCard({ act, title, lines, onDone, reduced }: { act: string; t
   return (
     <div className="letterbox">
       <div className="frame" onClick={() => !done && setN(full.length)}>
+        <div className="synth-floor" aria-hidden />
         <div className="card-stage act-card">
           <p className="card-kicker">{act}</p>
           <h2 className="card-title big">{title}</h2>

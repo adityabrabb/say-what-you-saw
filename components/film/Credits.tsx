@@ -32,6 +32,7 @@ export default function Credits({ film, onReplay, reduced }: { film: FilmState; 
 
   return (
     <div className="credits">
+      <div className="synth-floor" aria-hidden />
       <div className={rolled ? "credits-viewport still" : "credits-viewport"}>
         <div className="credits-roll" onAnimationEnd={() => setRolled(true)}>
           <p className="cr-kicker">A film directed by voice</p>

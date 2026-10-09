@@ -63,6 +63,7 @@ export default function Opening({ onDone, reduced }: { onDone: () => void; reduc
       <div className="frame">
         {beat === "flicker" && <div className="projector-light" aria-hidden />}
         {beat === "leader" && <Leader n={count} />}
+        {beat === "title" && <div className="synth-floor" aria-hidden />}
         {beat === "title" && <TitleCard onRoll={onDone} />}
       </div>
     </div>
