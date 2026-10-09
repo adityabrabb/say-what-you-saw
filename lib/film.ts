@@ -31,11 +31,19 @@ export interface FilmState {
 const KEY = "swys-film";
 export const FRESH: FilmState = { scene: "opening", name: "", seen: false, witness: null, director: null };
 
+let resuming: boolean | null = null;
+
+// A refresh resumes the same scene; a new visit (new tab or browser session) starts the film from
+// the top, keeping the star's name and the Select Scene unlock.
 export function loadFilm(): FilmState {
   try {
+    // Decided once per page load (React may mount twice in development).
+    resuming ??= sessionStorage.getItem(KEY) === "1";
+    sessionStorage.setItem(KEY, "1");
     const raw = JSON.parse(localStorage.getItem(KEY) || "null") as Partial<FilmState> | null;
     if (!raw || !SCENES.includes(raw.scene as SceneId)) return FRESH;
-    return { ...FRESH, ...raw };
+    const saved = { ...FRESH, ...raw };
+    return resuming ? saved : { ...saved, scene: "opening" };
   } catch {
     return FRESH;
   }
