@@ -182,7 +182,15 @@ function FinalTotal({ total, celebrateIt }: { total: number; celebrateIt: boolea
   return <>{shown}</>;
 }
 
-export default function RecallGame() {
+// What the film needs from a finished game. Gameplay never depends on it.
+export interface RecallFinish {
+  score: number;
+  max: number;
+  best: number;
+  bestLine: string;
+}
+
+export default function RecallGame({ onFinish }: { onFinish?: (r: RecallFinish) => void } = {}) {
   const [phase, setPhase] = useState<Phase>("pick");
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [rounds, setRounds] = useState<number>(5);
@@ -277,6 +285,8 @@ export default function RecallGame() {
       setNewBest(true);
     }
     setPhase("final");
+    const top = results.reduce<RoundResult | null>((a, r) => (r.said && (!a || (r.score?.total ?? 0) > (a.score?.total ?? 0)) ? r : a), null);
+    onFinish?.({ score: total, max: rounds * 100, best: Math.max(best, total), bestLine: top?.said ?? "" });
   };
 
   // Sound cues: a beep per countdown number, ticks while describing, alarms in the last 5 seconds.

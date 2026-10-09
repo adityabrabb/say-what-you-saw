@@ -15,7 +15,7 @@ import { sfx } from "@/lib/sound";
 const HINTS = [
   "Put me on a Tokyo rooftop at night with neon rain",
   "Golden hour, warm light from the left",
-  "Black and white noir, heavy grain",
+  "Black and white noir, hard light from above",
   "Make the moon orbit my head",
   "Write ADI under my chin in gold",
 ];
@@ -72,7 +72,15 @@ interface Slot {
   blur: number;
 }
 
-export default function DirectorStage() {
+// What the film carries into the end credits when the director calls a wrap.
+export interface DirectorWrap {
+  lines: string[];
+  takes: number;
+  strip: Blob | null;
+  credits: Credit[];
+}
+
+export default function DirectorStage({ film }: { film?: { onWrap: (w: DirectorWrap) => void } } = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [phase, setPhase] = useState<"intro" | "starting" | "live">("intro");
@@ -102,6 +110,8 @@ export default function DirectorStage() {
     capture: false,
     frames: [] as HTMLCanvasElement[],
     lines: [] as string[],
+    lastStrip: null as Blob | null,
+    credits: [] as Credit[],
     catalog: null as Catalog | null,
     renderer: null as DirectorRenderer | null,
     overlays: null as OverlayLayer | null,
@@ -145,6 +155,7 @@ export default function DirectorStage() {
     };
     const img = e.catalog?.images.find((i) => i.id === bg.id);
     setCredit(bg.type === "image" && img ? img.credit : null);
+    if (bg.type === "image" && img && !e.credits.some((c) => c.url === img.credit.url)) e.credits.push(img.credit);
     if (type === 1 && img) {
       const el = new Image();
       el.src = `/backgrounds/${img.file}`;
@@ -348,6 +359,7 @@ export default function DirectorStage() {
             const batch = e.frames.splice(0, STRIP_SIZE);
             buildPhotoStrip(batch, e.lines.filter((l) => !SHOT.test(l.toLowerCase())))
               .then((blob) => {
+                e.lastStrip = blob;
                 setStrip(URL.createObjectURL(blob));
                 setShots(0);
               })
@@ -429,6 +441,18 @@ export default function DirectorStage() {
     }
   };
 
+  // Film mode: hand the shoot to the end credits. Leftover shots become a short strip of their own.
+  const [wrapping, setWrapping] = useState(false);
+  const wrap = async () => {
+    if (!film || wrapping) return;
+    setWrapping(true);
+    const e = eng.current;
+    const lines = e.lines.filter((l) => !SHOT.test(l.toLowerCase()) && !UNDO.test(l.toLowerCase().replace(/[.!?,;:]+$/g, "").trim()));
+    let strip = e.lastStrip;
+    if (e.frames.length) strip = await buildPhotoStrip(e.frames.slice(-STRIP_SIZE), lines).catch(() => strip);
+    film.onWrap({ lines, takes: take, strip, credits: e.credits });
+  };
+
   const fullscreen = () => {
     if (document.fullscreenElement) void document.exitFullscreen();
     else void document.documentElement.requestFullscreen().catch(() => {});
@@ -466,9 +490,15 @@ export default function DirectorStage() {
       {phase === "live" && (
         <>
           <div className="director-top">
-            <Link href="/" className="dir-chip" onClick={() => sfx.back()}>
-              ◄ HOME
-            </Link>
+            {film ? (
+              <button className="dir-chip btn wrap" onClick={() => void wrap()} disabled={wrapping}>
+                {wrapping ? "WRAPPING…" : "WRAP ▸ CREDITS"}
+              </button>
+            ) : (
+              <Link href="/" className="dir-chip" onClick={() => sfx.back()}>
+                ◄ HOME
+              </Link>
+            )}
             <span className="dir-chip title">DIRECTOR MODE</span>
             <span className="dir-spacer" />
             <span className="dir-chip rec">
@@ -558,9 +588,14 @@ export default function DirectorStage() {
                   <button className="ghost" onClick={() => setStrip(null)}>
                     Keep shooting
                   </button>
-                  <a className="primary strip-dl" href={strip} download={`director-strip-${Date.now()}.png`}>
+                  <a className={film ? "ghost strip-dl" : "primary strip-dl"} href={strip} download={`director-strip-${Date.now()}.png`}>
                     Download PNG
                   </a>
+                  {film && (
+                    <button className="primary" onClick={() => void wrap()} disabled={wrapping}>
+                      Roll credits ▸
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

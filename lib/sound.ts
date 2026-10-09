@@ -169,3 +169,151 @@ export function scoreSound(score: number) {
   else if (score >= 50) sfx.good();
   else sfx.bad();
 }
+
+// ---------- Film sound mix ----------
+
+// One looping noise buffer shared by the projector rattle and the room tone.
+let noiseBuf: AudioBuffer | null = null;
+function loopNoise(ac: AudioContext) {
+  if (!noiseBuf || noiseBuf.sampleRate !== ac.sampleRate) {
+    noiseBuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  const src = ac.createBufferSource();
+  src.buffer = noiseBuf;
+  src.loop = true;
+  return src;
+}
+
+// A long-running sound with a fade-in, a level and a fade-out. Survives mute: it stops when
+// muted and starts again (if still wanted) when unmuted.
+function bed(build: (ac: AudioContext, out: GainNode) => AudioScheduledSourceNode[], fadeIn: number) {
+  let want = false;
+  let level = 1;
+  let live: { out: GainNode; srcs: AudioScheduledSourceNode[] } | null = null;
+  const peak = () => level;
+
+  const startNow = () => {
+    const ac = audio();
+    if (!ac || live) return;
+    const out = ac.createGain();
+    out.gain.setValueAtTime(0.0001, ac.currentTime);
+    out.gain.exponentialRampToValueAtTime(Math.max(0.0001, peak()), ac.currentTime + fadeIn);
+    out.connect(ac.destination);
+    const srcs = build(ac, out);
+    srcs.forEach((s) => s.start());
+    live = { out, srcs };
+  };
+  const stopNow = (fade: number) => {
+    if (!live || !ctx) return;
+    const { out, srcs } = live;
+    live = null;
+    const t = ctx.currentTime;
+    out.gain.cancelScheduledValues(t);
+    out.gain.setValueAtTime(Math.max(0.0001, out.gain.value), t);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + fade);
+    srcs.forEach((s) => s.stop(t + fade + 0.05));
+  };
+  onMuteChange((m) => (m ? stopNow(0.2) : want && startNow()));
+
+  return {
+    start() {
+      want = true;
+      startNow();
+    },
+    stop(fade = 1.2) {
+      want = false;
+      stopNow(fade);
+    },
+    // 0..1 relative loudness, eased so act changes never jump.
+    level(v: number, over = 1.5) {
+      level = Math.max(0.0001, v);
+      if (live && ctx) live.out.gain.setTargetAtTime(level, ctx.currentTime, over / 3);
+    },
+  };
+}
+
+// Projector motor: low hum plus a soft gate rattle at 24 frames a second.
+export const projector = bed((ac, out) => {
+  const master = ac.createGain();
+  master.gain.value = 0.05;
+  master.connect(out);
+  const hum = ac.createOscillator();
+  hum.type = "sawtooth";
+  hum.frequency.value = 48;
+  const humLp = ac.createBiquadFilter();
+  humLp.type = "lowpass";
+  humLp.frequency.value = 220;
+  const humGain = ac.createGain();
+  humGain.gain.value = 0.35;
+  hum.connect(humLp).connect(humGain).connect(master);
+
+  const rattle = loopNoise(ac);
+  const bp = ac.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.frequency.value = 2200;
+  bp.Q.value = 0.9;
+  const gate = ac.createGain();
+  gate.gain.value = 0.25;
+  const lfo = ac.createOscillator();
+  lfo.type = "square";
+  lfo.frequency.value = 24;
+  const depth = ac.createGain();
+  depth.gain.value = 0.25;
+  lfo.connect(depth).connect(gate.gain);
+  rattle.connect(bp).connect(gate).connect(master);
+  return [hum, rattle, lfo];
+}, 1.2);
+
+// Quiet ambient drone: two detuned low fifths and breathing room tone under a slow filter sweep.
+export const drone = bed((ac, out) => {
+  const master = ac.createGain();
+  master.gain.value = 0.045;
+  const lp = ac.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.value = 420;
+  lp.Q.value = 2;
+  lp.connect(master).connect(out);
+  const srcs: AudioScheduledSourceNode[] = [];
+  [55, 55.4, 82.4, 110.2].forEach((f, i) => {
+    const o = ac.createOscillator();
+    o.type = i % 2 ? "triangle" : "sine";
+    o.frequency.value = f;
+    const g = ac.createGain();
+    g.gain.value = i < 2 ? 0.5 : 0.22;
+    o.connect(g).connect(lp);
+    srcs.push(o);
+  });
+  const air = loopNoise(ac);
+  const airLp = ac.createBiquadFilter();
+  airLp.type = "lowpass";
+  airLp.frequency.value = 600;
+  const airGain = ac.createGain();
+  airGain.gain.value = 0.08;
+  air.connect(airLp).connect(airGain).connect(master);
+  srcs.push(air);
+  const sweep = ac.createOscillator();
+  sweep.frequency.value = 0.05;
+  const sweepDepth = ac.createGain();
+  sweepDepth.gain.value = 180;
+  sweep.connect(sweepDepth).connect(lp.frequency);
+  srcs.push(sweep);
+  return srcs;
+}, 4);
+
+export const filmSfx = {
+  // Soft projector latch: a damped thump and two muffled clicks.
+  projectorClick: () => {
+    noise(0.025, 0.12, 0, 2400);
+    tone({ freq: 140, to: 60, dur: 0.09, type: "sine", vol: 0.12 });
+    noise(0.03, 0.07, 0.11, 1600);
+  },
+  // Countdown leader blip on every number; the classic "2-pop" is a touch brighter.
+  leader: (n: number) => tone({ freq: n === 2 ? 1000 : 640, dur: n === 2 ? 0.12 : 0.05, type: "sine", vol: n === 2 ? 0.08 : 0.03 }),
+  type: () => noise(0.015, 0.04, 0, 3000 + Math.random() * 1500),
+  // Film burn: a soft rush of air.
+  burn: () => whoosh(0.9, 0.08),
+  accept: () => arpeggio([392, 587, 784], 0.07, "triangle", 0.05),
+  nope: () => tone({ freq: 220, to: 180, dur: 0.16, type: "triangle", vol: 0.05 }),
+};

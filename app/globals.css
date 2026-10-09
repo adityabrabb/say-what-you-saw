@@ -629,3 +629,236 @@ a.dir-chip:hover { color: var(--yellow); }
   .dir-credit { display: none; }
   .slate-hints .hint:nth-child(n + 4) { display: none; }
 }
+
+/* ================= THE FILM =================
+   A cinematic film running on an arcade machine: black, cream serif titles, one amber accent,
+   2.39:1 letterbox for the title cards, CRT scanlines kept from the cabinet. No film grain. */
+:root {
+  --film-black: #030303;
+  --film-frame: #0b0907;
+  --cream: #f3e9d2;
+  --cream-dim: rgba(243, 233, 210, 0.62);
+  --cream-faint: rgba(243, 233, 210, 0.18);
+  --amber: #ffb547;
+  --font-serif-stack: var(--font-serif), Georgia, serif;
+  --bar: clamp(10px, calc((100dvh - 100vw / 2.39) / 2), 26vh);
+}
+@media (max-aspect-ratio: 4/5) { :root { --bar: 7vh; } }
+
+body.film-on { background: var(--film-black); }
+body.film-on .sound-toggle { display: none; }
+body.film-on:not(.film-arcade) .starfield,
+body.film-on:not(.film-arcade) .grid-floor { display: none; }
+body.film-on .crt { background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.16) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 62%, rgba(0, 0, 0, 0.5) 100%); }
+
+.film-root { min-height: 100dvh; background: var(--film-black); color: var(--cream); font-family: var(--font-ui); }
+.film-root.scene-act1 { background: transparent; }
+
+/* Pure black opening; the whole screen is the start button */
+.film-black {
+  position: fixed; inset: 0; z-index: 60; width: 100%; border: 0; background: #000; cursor: pointer;
+  display: grid; align-items: end; justify-items: center; padding-bottom: 12vh;
+}
+.film-black:focus-visible { outline: none; }
+.film-black-hint {
+  font-size: 12px; letter-spacing: 0.32em; text-transform: uppercase; color: var(--cream-dim);
+  opacity: 0; animation: fade-in-slow 1.6s ease 1.8s forwards;
+}
+.film-black:focus-visible .film-black-hint { color: var(--amber); }
+@keyframes fade-in-slow { to { opacity: 0.7; } }
+
+/* 2.39:1 letterbox: pure black bars, a warm dark frame between them */
+.letterbox { position: fixed; inset: 0; z-index: 10; background: #000; }
+.letterbox .frame {
+  position: absolute; left: 0; right: 0; top: var(--bar); bottom: var(--bar); overflow: hidden;
+  background: radial-gradient(ellipse at 50% 0%, #17110b 0%, var(--film-frame) 55%, #050403 100%);
+  display: grid; place-items: center;
+}
+.letterbox.flickering .frame { animation: projector-flicker 1.5s steps(1) both; }
+.projector-light { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 30%, rgba(255, 214, 160, 0.16), transparent 70%); animation: projector-flicker 1.5s steps(1) both; }
+@keyframes projector-flicker {
+  0% { opacity: 0; } 8% { opacity: 0.5; } 12% { opacity: 0.05; } 20% { opacity: 0.7; } 24% { opacity: 0.2; }
+  34% { opacity: 0.85; } 38% { opacity: 0.4; } 52% { opacity: 1; } 56% { opacity: 0.75; } 70% { opacity: 1; } 100% { opacity: 1; }
+}
+
+/* Countdown leader: rings, crosshair and a rotating sweep, one turn per number */
+@property --sweep { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.leader { width: 100%; height: 100%; display: grid; place-items: center; background: #1a1612; }
+.leader-dial { position: relative; height: min(78%, 80vw); aspect-ratio: 1; display: grid; place-items: center; }
+.leader-sweep {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(rgba(243, 233, 210, 0.22) var(--sweep), rgba(0, 0, 0, 0.25) var(--sweep));
+  animation: leader-sweep 0.9s linear forwards;
+}
+@keyframes leader-sweep { from { --sweep: 0deg; } to { --sweep: 360deg; } }
+.leader-ring { position: absolute; border-radius: 50%; border: 2px solid var(--cream-dim); }
+.leader-ring.outer { inset: 0; }
+.leader-ring.inner { inset: 12%; border-width: 1px; }
+.leader-cross { position: absolute; inset: -20% -60%; }
+.leader-cross::before, .leader-cross::after { content: ""; position: absolute; background: var(--cream-faint); }
+.leader-cross::before { left: 0; right: 0; top: 50%; height: 1px; }
+.leader-cross::after { top: 0; bottom: 0; left: 50%; width: 1px; }
+.leader-num { position: relative; font-family: var(--font-serif-stack); font-weight: 600; font-size: min(22vh, 40vw); line-height: 1; color: var(--cream); text-shadow: 0 0 30px rgba(255, 190, 110, 0.35); }
+
+/* Title card: warm light from above, landing as a pool on the floor */
+.title-stage { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(8px, 2vh, 18px); padding: 16px; text-align: center; }
+.spot-lamp { position: absolute; top: -18px; left: 50%; width: min(240px, 40vw); height: 36px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(ellipse, rgba(255, 236, 200, 0.9), rgba(255, 190, 110, 0.25) 50%, transparent 72%); filter: blur(4px); }
+.spot-beam {
+  position: absolute; top: 0; bottom: 0; left: 50%; width: min(1100px, 120vw); transform: translateX(-50%); pointer-events: none;
+  background: linear-gradient(to bottom, rgba(255, 205, 140, 0.26), rgba(255, 180, 100, 0.08) 70%, rgba(255, 180, 100, 0.03));
+  clip-path: polygon(42% 0, 58% 0, 88% 100%, 12% 100%); filter: blur(14px);
+  animation: beam-breathe 6s ease-in-out infinite alternate;
+}
+@keyframes beam-breathe { from { opacity: 0.85; } to { opacity: 1; } }
+.floor-pool {
+  position: absolute; bottom: -6%; left: 50%; width: min(1000px, 110vw); height: 30%; transform: translateX(-50%); pointer-events: none;
+  background: radial-gradient(ellipse at 50% 55%, rgba(255, 190, 110, 0.3), rgba(255, 170, 90, 0.08) 45%, transparent 70%);
+  display: grid; place-items: center;
+}
+.floor-shadow {
+  font-family: var(--font-serif-stack); font-weight: 600; font-size: clamp(22px, 7vw, 92px); white-space: nowrap;
+  color: rgba(0, 0, 0, 0.55); transform: perspective(300px) rotateX(62deg) scaleY(0.9); filter: blur(3px); user-select: none;
+}
+.film-title {
+  position: relative; margin: 0; font-family: var(--font-serif-stack); font-weight: 600; letter-spacing: 0.01em; line-height: 1;
+  font-size: clamp(42px, 8.5vw, 120px); color: var(--cream);
+  text-shadow: 0 0 18px rgba(255, 200, 130, 0.45), 0 0 60px rgba(255, 160, 70, 0.28), 0 18px 40px rgba(255, 150, 60, 0.22);
+  animation: title-in 2.2s ease both;
+}
+.film-title.small { font-size: clamp(36px, 7vw, 76px); animation: none; }
+@keyframes title-in { 0% { opacity: 0; filter: blur(6px); } 30% { opacity: 0.6; } 34% { opacity: 0.2; } 50% { opacity: 0.9; filter: blur(0); } 100% { opacity: 1; } }
+.film-kicker { position: relative; margin: 0; color: var(--cream-dim); font-size: clamp(11px, 1.4vw, 14px); letter-spacing: 0.28em; text-transform: uppercase; animation: fade-up 1s ease 1s both; }
+@keyframes fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* Direction box: the one place you talk to the film */
+.direction-box {
+  position: relative; width: min(560px, 100%); margin-top: clamp(4px, 2vh, 22px); padding: 12px 14px 10px; text-align: left;
+  background: rgba(5, 4, 3, 0.72); border: 1px solid rgba(243, 233, 210, 0.28); border-top: 3px solid var(--amber); border-radius: 4px;
+  animation: fade-up 0.8s ease 1.6s both;
+}
+.direction-label { display: block; font-family: var(--font-head); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--amber); margin-bottom: 8px; }
+.direction-row { display: flex; gap: 8px; }
+.direction-input {
+  flex: 1; min-width: 0; font: 500 17px var(--font-ui); color: var(--cream); background: transparent;
+  border: 0; border-bottom: 1px solid rgba(243, 233, 210, 0.35); padding: 8px 2px; outline: none;
+}
+.direction-input::placeholder { color: rgba(243, 233, 210, 0.4); }
+.direction-input:focus { border-bottom-color: var(--amber); }
+.direction-hint { margin: 8px 0 0; font-size: 12px; color: var(--cream-dim); min-height: 1.3em; }
+
+.film-btn {
+  font: 600 13px var(--font-ui); letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; cursor: pointer;
+  color: #120c04; background: var(--amber); border: 1px solid var(--amber); border-radius: 3px; padding: 10px 16px;
+  box-shadow: 0 0 18px rgba(255, 181, 71, 0.25); transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.film-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 0 26px rgba(255, 181, 71, 0.45); }
+.film-btn:focus-visible { outline: 2px solid var(--cream); outline-offset: 2px; }
+.film-btn:disabled { opacity: 0.45; cursor: default; }
+.film-btn.ghost { color: var(--cream); background: transparent; border-color: rgba(243, 233, 210, 0.35); box-shadow: none; }
+.film-btn.ghost:hover:not(:disabled) { border-color: var(--amber); color: var(--amber); }
+
+/* Cast and act cards */
+.card-stage { width: min(760px, 100%); padding: 16px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; }
+.cast-form { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.card-kicker { margin: 0; color: var(--amber); font-family: var(--font-head); font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; animation: fade-up 0.8s ease both; }
+.card-title { margin: 0; font-family: var(--font-serif-stack); font-weight: 600; font-size: clamp(30px, 5vw, 58px); color: var(--cream); text-shadow: 0 0 24px rgba(255, 190, 110, 0.3); animation: fade-up 0.9s ease 0.15s both; }
+.card-title.big { font-size: clamp(38px, 7vw, 92px); line-height: 1; }
+.cast-card { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.card-star { margin: 0; font-family: var(--font-serif-stack); font-weight: 700; font-size: clamp(48px, 10vw, 130px); line-height: 1; color: var(--cream); text-shadow: 0 0 22px rgba(255, 200, 130, 0.5), 0 0 70px rgba(255, 160, 70, 0.3); animation: title-in 1.8s ease both; }
+.card-sub { margin: 0; color: var(--cream-dim); font-family: var(--font-serif-stack); font-style: italic; font-size: clamp(16px, 2.2vw, 22px); animation: fade-up 1s ease 1s both; }
+.typed { min-height: 5.5em; font-family: var(--font-serif-stack); font-style: italic; font-size: clamp(17px, 2.4vw, 26px); color: var(--cream); line-height: 1.35; }
+.typed p { margin: 0; }
+.caret { display: inline-block; width: 0.5em; height: 1em; margin-left: 2px; vertical-align: -0.12em; background: var(--amber); animation: caret 0.9s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+
+/* Act I wraps the untouched Recall game */
+.film-act1 { padding-bottom: 110px; }
+.act-label { margin: 6px 0 18px; padding-right: 230px; font-family: var(--font-serif-stack); font-style: italic; font-size: 20px; color: var(--cream); }
+.film-next {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 50; width: min(560px, calc(100% - 32px));
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px 10px 16px;
+  background: rgba(5, 4, 3, 0.92); border: 1px solid rgba(243, 233, 210, 0.25); border-top: 3px solid var(--amber); border-radius: 4px;
+  color: var(--cream-dim); font-size: 14px; animation: fade-in 0.6s ease both;
+}
+.film-next strong { color: var(--cream); font-size: 18px; }
+
+/* Act II: room for the film chrome beside Director's top bar */
+body.film-on .director-top { right: 240px; }
+.dir-chip.wrap { color: #120c04; background: var(--amber); border-color: var(--amber); font-size: 11px; }
+
+/* Corner chrome: mute + Select Scene */
+.film-chrome { position: fixed; top: 12px; right: 12px; z-index: 90; display: flex; gap: 6px; align-items: flex-start; }
+.film-chip {
+  font: 600 11px var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer;
+  color: var(--cream-dim); background: rgba(3, 3, 3, 0.72); border: 1px solid rgba(243, 233, 210, 0.22); border-radius: 3px; padding: 7px 10px;
+}
+.film-chip:hover, .film-chip[aria-expanded="true"] { color: var(--amber); border-color: var(--amber); }
+.scene-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; min-width: 240px; display: flex; flex-direction: column;
+  background: rgba(5, 4, 3, 0.96); border: 1px solid rgba(243, 233, 210, 0.22); border-top: 2px solid var(--amber); border-radius: 3px; padding: 4px;
+}
+.scene-menu button { text-align: left; font: 500 17px var(--font-serif-stack); color: var(--cream); background: none; border: 0; padding: 9px 10px; cursor: pointer; border-radius: 2px; }
+.scene-menu button:hover, .scene-menu button:focus-visible { background: rgba(255, 181, 71, 0.12); color: var(--amber); outline: none; }
+.scene-menu button.current { color: var(--amber); }
+
+/* Transitions: film burn and cut to black */
+.film-fx { position: fixed; inset: 0; z-index: 95; pointer-events: none; overflow: hidden; }
+.film-fx.cut { background: #000; animation: cut-black 0.7s ease both; }
+@keyframes cut-black { 0% { opacity: 0; } 20% { opacity: 1; } 55% { opacity: 1; } 100% { opacity: 0; } }
+.film-fx.burn { animation: burn-black 1.5s ease both; }
+.film-fx.burn::before {
+  content: ""; position: absolute; inset: -20%;
+  background:
+    radial-gradient(circle at 72% 38%, #fff4d6 0%, #ffb547 9%, #d9531e 20%, rgba(80, 18, 0, 0.9) 34%, transparent 52%),
+    radial-gradient(circle at 24% 70%, rgba(255, 210, 140, 0.9) 0%, rgba(214, 80, 20, 0.7) 14%, transparent 34%);
+  filter: blur(10px); animation: burn-bloom 1.5s ease-in-out both;
+}
+@keyframes burn-black { 0%, 30% { background-color: rgba(0, 0, 0, 0); } 46%, 60% { background-color: #000; } 100% { background-color: rgba(0, 0, 0, 0); } }
+@keyframes burn-bloom { 0% { transform: scale(0.2); opacity: 0; } 25% { opacity: 1; } 45% { transform: scale(1.6); opacity: 1; } 70%, 100% { transform: scale(2); opacity: 0; } }
+
+/* End credits */
+.credits { position: fixed; inset: 0; z-index: 10; background: radial-gradient(ellipse at 50% -10%, #1a130b 0%, var(--film-black) 55%); display: flex; flex-direction: column; }
+.credits-viewport { flex: 1; overflow: hidden; position: relative; -webkit-mask-image: linear-gradient(transparent, #000 10%, #000 88%, transparent); mask-image: linear-gradient(transparent, #000 10%, #000 88%, transparent); }
+.credits-viewport.still { overflow-y: auto; }
+.credits-roll { width: min(640px, calc(100% - 32px)); margin: 0 auto; padding: 14vh 0 18vh; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; animation: credits-roll 46s linear both; }
+.credits-viewport.still .credits-roll { animation: none; padding-top: 10vh; }
+@keyframes credits-roll { from { transform: translateY(70vh); } to { transform: translateY(-100%); } }
+.credits-roll:hover { animation-play-state: paused; }
+.cr-kicker { margin: 0; color: var(--amber); font-size: 12px; letter-spacing: 0.3em; text-transform: uppercase; }
+.cr-act { margin: 34px 0 4px; font-family: var(--font-serif-stack); font-style: italic; font-weight: 500; font-size: 26px; color: var(--amber); }
+.cr-role { display: flex; flex-direction: column; gap: 2px; }
+.cr-label { font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--cream-dim); }
+.cr-value { font-family: var(--font-serif-stack); font-weight: 600; font-size: 24px; color: var(--cream); }
+.cr-value.quote { font-style: italic; font-weight: 500; font-size: 20px; }
+.cr-role.big .cr-value { font-size: clamp(40px, 8vw, 64px); text-shadow: 0 0 24px rgba(255, 190, 110, 0.4); }
+.cr-scenes { display: flex; flex-direction: column; gap: 12px; }
+.cr-strip { margin: 26px 0 8px; }
+.cr-strip img { display: block; width: min(300px, 70vw); height: auto; box-shadow: 0 0 50px rgba(255, 170, 80, 0.25); }
+.cr-none { font-family: var(--font-serif-stack); font-style: italic; color: var(--cream-dim); font-size: 18px; }
+.cr-note { margin: 0; font-family: var(--font-serif-stack); font-style: italic; color: var(--cream-dim); font-size: 17px; }
+.cr-end { margin: 40px 0 0; font-family: var(--font-serif-stack); font-weight: 600; font-size: 48px; color: var(--cream); }
+.credits-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 12px 16px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid rgba(243, 233, 210, 0.12); background: rgba(3, 3, 3, 0.9); }
+
+/* Phones */
+@media (max-width: 640px) {
+  .direction-row { flex-direction: column; }
+  .film-btn { padding: 11px 14px; }
+  .act-label { padding-right: 0; margin-top: 44px; font-size: 18px; }
+  body.film-on .director-top { right: 14px; top: 52px; }
+  .film-next { flex-direction: column; align-items: stretch; text-align: center; }
+  .credits-actions .film-btn { flex: 1 1 45%; font-size: 11px; }
+}
+@media (max-height: 520px) {
+  .film-kicker { display: none; }
+  .direction-box { margin-top: 0; padding: 8px 10px; }
+  .typed { min-height: 0; }
+}
+
+/* Reduced motion: no flicker, sweep, burn bloom or roll; content just appears */
+@media (prefers-reduced-motion: reduce) {
+  .letterbox.flickering .frame, .projector-light, .leader-sweep, .spot-beam, .film-title, .card-star, .film-black-hint,
+  .film-kicker, .direction-box, .card-kicker, .card-title, .card-sub, .film-next, .caret { animation: none !important; opacity: 1; }
+  .leader-sweep { --sweep: 360deg; }
+  .film-fx.burn::before { display: none; }
+  .credits-roll { animation: none !important; }
+}
