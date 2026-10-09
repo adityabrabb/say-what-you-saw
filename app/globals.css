@@ -934,3 +934,36 @@ body.film-arcade .grid-floor { opacity: 0.38; animation: fade-in 1.8s ease both;
 .film-act1 .recall-card::before { opacity: 0.55; box-shadow: none; }
 .film-act1 .act-label { text-shadow: 0 0 18px rgba(255, 43, 214, 0.25); }
 @media (prefers-reduced-motion: reduce) { .synth-floor::before { animation: none; } }
+
+/* ---------- Director: synthwave frame over the live camera (view only; captured shots stay clean) ---------- */
+.dir-synth {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(to bottom, rgba(70, 12, 110, 0.38), transparent 26%),
+    linear-gradient(90deg, rgba(255, 43, 214, 0.2), transparent 16%, transparent 84%, rgba(0, 240, 255, 0.17)),
+    radial-gradient(ellipse 80% 30% at 50% 104%, rgba(255, 43, 214, 0.3), transparent 70%);
+  box-shadow: inset 0 0 110px rgba(120, 20, 160, 0.45), inset 0 0 0 1px rgba(255, 43, 214, 0.35);
+  animation: fade-in 1.2s ease both;
+}
+/* Neon grid floor, low and soft so it never fights the subject */
+.dir-synth::before {
+  content: ""; position: absolute; left: -30%; right: -30%; bottom: 0; height: 50%;
+  background-image:
+    linear-gradient(rgba(255, 43, 214, 0.55) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 43, 214, 0.55) 1px, transparent 1px);
+  background-size: 60px 60px;
+  transform-origin: 50% 100%; transform: perspective(420px) rotateX(62deg);
+  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.75), transparent 85%); mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.75), transparent 85%);
+  mix-blend-mode: screen; opacity: 0.75;
+  animation: dir-grid 2.6s linear infinite;
+}
+@keyframes dir-grid { to { background-position: 0 60px; } }
+/* Horizon glow where the grid meets the scene */
+.dir-synth::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 27%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 43, 214, 0.5) 20%, rgba(255, 181, 71, 0.6) 50%, rgba(0, 240, 255, 0.45) 80%, transparent);
+  box-shadow: 0 0 18px rgba(255, 43, 214, 0.5);
+  opacity: 0.55;
+}
+.slate-body { background: rgba(14, 6, 24, 0.84); border-color: rgba(255, 43, 214, 0.3); box-shadow: 0 0 26px rgba(255, 43, 214, 0.16); }
+@media (prefers-reduced-motion: reduce) { .dir-synth, .dir-synth::before { animation: none; } }

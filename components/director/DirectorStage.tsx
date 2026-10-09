@@ -94,7 +94,6 @@ export default function DirectorStage({ film }: { film?: { onWrap: (w: DirectorW
   const [shots, setShots] = useState(0);
   const [strip, setStrip] = useState<string | null>(null);
   const [flashKey, setFlashKey] = useState(0);
-  const [fps, setFps] = useState(0);
   const [credit, setCredit] = useState<Credit | null>(null);
 
   // Mutable engine state lives in refs so the render loop never waits on React.
@@ -243,9 +242,8 @@ export default function DirectorStage({ film }: { film?: { onWrap: (w: DirectorW
       let target: FaceAnchors | null = null;
       let lastSeen = 0;
       let last = performance.now();
-      let frames = 0;
       let frameMsAvg = 16;
-      let fpsAt = last;
+      let adaptAt = last;
       let crop: [number, number] = [1, 1];
       let raf = 0;
 
@@ -367,11 +365,9 @@ export default function DirectorStage({ film }: { film?: { onWrap: (w: DirectorW
           }
         }
 
-        frames++;
-        if (now - fpsAt > 1000) {
-          setFps(Math.round((frames * 1000) / (now - fpsAt)));
-          frames = 0;
-          fpsAt = now;
+        // Once a second, let tracking trade resolution for speed on slow machines.
+        if (now - adaptAt > 1000) {
+          adaptAt = now;
           tracker?.adapt(frameMsAvg);
         }
       };
@@ -462,6 +458,7 @@ export default function DirectorStage({ film }: { film?: { onWrap: (w: DirectorW
     <div className="director-root" data-nosfx>
       <canvas ref={canvasRef} className="director-canvas" width={1280} height={720} />
       <video ref={videoRef} className="director-video" playsInline muted />
+      {phase === "live" && <div className="dir-synth" aria-hidden />}
 
       {phase !== "live" && (
         <div className="director-intro">
@@ -507,7 +504,6 @@ export default function DirectorStage({ film }: { film?: { onWrap: (w: DirectorW
             <span className="dir-chip">
               SHOT {shots}/{STRIP_SIZE}
             </span>
-            <span className={fps >= 30 ? "dir-chip" : "dir-chip warn"}>{fps} FPS</span>
             <button className="dir-chip btn" onClick={fullscreen} aria-label="Toggle fullscreen">
               ⛶
             </button>
