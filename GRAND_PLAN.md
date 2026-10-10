@@ -1,6 +1,6 @@
 # Grand Plan: Say What You Saw
 
-> Status: **Phases 1, 2 and 3 DONE (Oct 10, 2026).** Next up: **Phase 4: The Trailer**. Phase 5 (Most Wanted Wall) is deliberately SKIPPED for now (no database provisioned); keep its plan as written.
+> Status: **Phases 1, 2, 3 and 4 DONE (Oct 10, 2026).** Next up: **Phase 6: Polish and ship** (Phase 5 is skipped). Phase 5 (Most Wanted Wall) is deliberately SKIPPED for now (no database provisioned); keep its plan as written.
 > A fresh session should read `CLAUDE.md`, then this file, and continue from the first unchecked phase.
 
 ## The vision
@@ -116,21 +116,21 @@ The twist. It replaces the photo-strip popup after the fourth shot when Director
 
 ## Phase 4: The Trailer (finale)
 
-- [ ] After the credits, a **"Watch your trailer"** button (and a Select Scene entry) plays a **25-second trailer auto-edited from the session**.
-- [ ] It renders to a **1280×720 canvas** in letterbox format.
-- [ ] The model writes **four trailer title lines** ("In a world…" style) from the session text, with funny fallbacks.
-- [ ] The sequence:
-  - [ ] Black screen with the first line.
-  - [ ] A flash of a Recall target.
-  - [ ] The player's real dictated sentences as quoted subtitles.
-  - [ ] The score slamming in.
-  - [ ] The takes with **Ken Burns** zooms.
-  - [ ] The director lines as a fast, on-the-beat cut montage.
-  - [ ] The wanted poster with the GUILTY stamp.
-  - [ ] Final title: **"Starring <name>. Directed by voice. Coming soon to a browser near you."**
-- [ ] A **generated score** in Web Audio: trailer "braams", risers, a sub drop, and **silence just before the title**.
-- [ ] **MediaRecorder** records the canvas and audio into a **downloadable WebM**. Where recording isn't supported, it falls back to play-only.
-- [ ] Session data needed for the trailer (takes, lines, scores, poster) is kept on the device.
+- [x] After the credits, a **"Watch your trailer"** button (and a Select Scene entry) plays a **25-second trailer auto-edited from the session**.
+- [x] It renders to a **1280×720 canvas** in letterbox format.
+- [x] The model writes **four trailer title lines** ("In a world…" style) from the session text, with funny fallbacks.
+- [x] The sequence:
+  - [x] Black screen with the first line.
+  - [x] A flash of a Recall target.
+  - [x] The player's real dictated sentences as quoted subtitles.
+  - [x] The score slamming in.
+  - [x] The takes with **Ken Burns** zooms.
+  - [x] The director lines as a fast, on-the-beat cut montage.
+  - [x] The wanted poster with the GUILTY stamp.
+  - [x] Final title: **"Starring <name>. Directed by voice. Coming soon to a browser near you."**
+- [x] A **generated score** in Web Audio: trailer "braams", risers, a sub drop, and **silence just before the title**.
+- [x] **MediaRecorder** records the canvas and audio into a **downloadable WebM**. Where recording isn't supported, it falls back to play-only.
+- [x] Session data needed for the trailer (takes, lines, scores, poster) is kept on the device.
 
 ## Phase 5: The Most Wanted Wall
 
@@ -193,4 +193,12 @@ The twist. It replaces the photo-strip popup after the fourth shot when Director
   - **Credits in 3D:** CSS `perspective` layers at different depths and speeds: a ghost title far back, film strips with sprocket holes beside the roll, dust right in front; the camera tilts with the pointer. Reduced motion: static.
   - **Recall copy (no logic):** leftover arcade copy rewritten in the witness-statement tone: verdict lines (`VERDICTS` strings in `lib/score.ts`, tiers/thresholds untouched), "Witness Briefing" tutorial, "You get 3 seconds. Once.", "Cross-checking...", "No statement, no sketch.", "Open the file", "Close the case", etc. Scoring, timings, pools and scene JSON untouched.
   - **Tested** (headless Chrome, production build, software GL): opening (beam, particle assembly, lit title, no console errors), reduced motion (CSS title, no canvas), 390x844 phone (opening, 404, ad, credits), Act 2.5 -> ad auto-advance, director line spoken/shown, ad Skip first click denied / second click goes to Act II card, reel-change cue marks positioned top-right, credits layers, standalone `/recall` renders the new briefing.
+- **Phase 4 (Oct 10, 2026): The Trailer, shipped.**
+  - **Where:** credits get a **Watch your trailer** button; also in Select Scene ("Watch your trailer"). Scene `trailer` (`components/film/Trailer.tsx`, lazy via `next/dynamic`, wrapped in an error boundary that sends the viewer back to the credits; there is always a "Back to credits" button). The credits flow never depends on it.
+  - **Render (`lib/trailer/render.ts`):** a pure `drawTrailer(g, t, session, assets, fonts)` on a 1280x720 canvas, 2.39:1 letterbox, noir look, no grain (dust specks only). Cut list `CUTS`: 0-3.4 opener line on black in a projector cone; 3.4-5 flash + CCTV "Exhibit A" with a Recall target's real description; 5-10.4 the player's real dictated sentences as typed quotes (up to 3); 10.4-12.4 title line 2; 12.4-14.2 the score slams in (shake, stamp); 14.2-18.2 the four takes with Ken Burns (cropped from the saved photo strip; no strip -> lit wall) and title line 3; 18.2-20.4 the director's lines as a cut montage on a 0.4s beat; 20.4-22.4 the wanted poster slams in with GUILTY and title line 4 (no poster -> a bare wanted card); 22.4-23.0 black silence; 23.0-25 "Starring <name>. Directed by voice. Coming soon to a browser near you." Reduced motion: same cuts, no flashes, shakes or slams (`setCalm`).
+  - **Score (`lib/trailer/score.ts`):** all Web Audio on its own AudioContext, scheduled on the same marks: risers, braams, clock ticks, a pulse, kicks and hats on the beat, a sub drop, the stamp hit, then the master gain is cut to true silence 22.4-23.0 (measured RMS 0.000), then a quiet chord and typewriter keys. Feeds the speakers (muted if the film is muted) and a MediaStream for the recorder (always).
+  - **Narration (`/api/trailer`, `lib/trailer/*`):** text only, zod, provider chain, 10-min cache, 6/min per IP, one retry, on-brief check (anything in curly quotes must be something the player really said; no looks/body/voice/age/identity words) and funny house fallback lines built from the session (`offline.ts`). The client times out at 9s and falls back; the trailer never waits on it.
+  - **Recorder (`lib/trailer/record.ts`):** `canvas.captureStream(30)` + the score's audio track -> `MediaRecorder` (vp9/opus, else vp8/h264, else mp4 on Safari). Unsupported or throwing -> null -> the trailer plays watch-only with a quiet note and no download button. A download needs more than 1KB of data.
+  - **Tested** (headless Chrome, production build, software GL, real-time 25s runs): full run with strip + poster + AI lines; model blocked (house lines); demo subject (no strip/poster); `MediaRecorder` deleted (watch-only, no Download button, Back to credits works); `AudioContext` deleted (silent picture still plays); reduced motion; 390px phone; skip mid-trailer; credits -> trailer -> back. **The recorded file was checked: EBML header, tracks V_VP9 + A_OPUS, decodes at 1280x720, ~25.8s, and the decoded audio has real energy (RMS 0.02-0.10) with exact silence at 22.55-22.95s.**
+  - Recall's gameplay, timing and scoring are untouched (the trailer only reads the data Recall already reports through `onFinish`).
 

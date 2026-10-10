@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { buildCreditsCard, download, starName, type FilmState } from "@/lib/film";
 
 // Rolling end credits with the photo strip in the middle, and the three things you can take home.
-export default function Credits({ film, onReplay, reduced }: { film: FilmState; onReplay: () => void; reduced: boolean }) {
+export default function Credits({ film, onReplay, onTrailer, reduced }: { film: FilmState; onReplay: () => void; onTrailer: () => void; reduced: boolean }) {
   const [busy, setBusy] = useState(false);
   const [rolled, setRolled] = useState(reduced);
   const root = useRef<HTMLDivElement>(null);
@@ -136,7 +136,10 @@ export default function Credits({ film, onReplay, reduced }: { film: FilmState; 
         <button className="film-btn ghost" onClick={() => void shareCard()} disabled={busy}>
           {busy ? "Printing…" : "Share credits card"}
         </button>
-        <button className="film-btn" onClick={onReplay}>
+        <button className="film-btn" onClick={onTrailer}>
+          Watch your trailer ▸
+        </button>
+        <button className="film-btn ghost" onClick={onReplay}>
           Play again ▸
         </button>
       </div>

@@ -15,13 +15,16 @@ import Credits from "./Credits";
 import Opening from "./Opening";
 import { CommercialBreak, NotFound } from "./Break";
 
+// The trailer (canvas + Web Audio + recorder) loads only when asked for.
+const Trailer = dynamic(() => import("./Trailer"), { ssr: false });
+
 // WebGL + MediaPipe only load when the film reaches Act II.
 const DirectorStage = dynamic(() => import("@/components/director/DirectorStage"), { ssr: false });
 
 // "reel" is the act change: two cue marks tick in the corner, the reel changes over, then the film burns through.
 type Cut = "burn" | "reel" | "cut" | "none";
 const CUT_MS: Record<Exclude<Cut, "none">, [number, number]> = { burn: [700, 1500], reel: [1700, 2500], cut: [180, 700] }; // [swap scene at, end]
-const DRONE: Record<SceneId, number> = { opening: 1, cast: 1, "act1-card": 1, act1: 0.3, act25: 0.6, ad: 0.3, "act2-card": 1, act2: 0.2, act3: 0.15, credits: 0.8 };
+const DRONE: Record<SceneId, number> = { opening: 1, cast: 1, "act1-card": 1, act1: 0.3, act25: 0.6, ad: 0.3, "act2-card": 1, act2: 0.2, act3: 0.15, credits: 0.8, trailer: 0.02 };
 
 const MENU: { scene: SceneId; label: string }[] = [
   { scene: "opening", label: "Opening titles" },
@@ -31,6 +34,7 @@ const MENU: { scene: SceneId; label: string }[] = [
   { scene: "act2-card", label: "Act II · The Director's Stage" },
   { scene: "act3", label: "Act III · The Verdict" },
   { scene: "credits", label: "End credits" },
+  { scene: "trailer", label: "Watch your trailer" },
 ];
 
 // Scenes where the director may speak at all; the game's timed phases are quiet on top of this.
@@ -182,6 +186,8 @@ export default function Film() {
   const replay = useCallback(() => go("act1-card", "burn", { witness: null, director: null, verdict: null }), [go]);
   const verdict = useCallback((v: VerdictResult) => update({ verdict: v }), [update]);
   const toCredits = useCallback(() => go("credits", "reel"), [go]);
+  const toTrailer = useCallback(() => go("trailer", "burn"), [go]);
+  const backToCredits = useCallback(() => go("credits", "cut"), [go]);
 
   if (!film) return <div className="film-root" />;
 
@@ -212,7 +218,8 @@ export default function Film() {
       {film.scene === "act2-card" && <ActCard act="Act II" title="The Director's Stage" lines={ACT2} onDone={act2Done} reduced={reduced} />}
       {film.scene === "act2" && <DirectorStage film={{ onWrap: wrap, onLine }} />}
       {film.scene === "act3" && <Verdict film={film} reduced={reduced} onVerdict={verdict} onAppeal={replay} onCredits={toCredits} />}
-      {film.scene === "credits" && <Credits film={film} onReplay={replay} reduced={reduced} />}
+      {film.scene === "credits" && <Credits film={film} onReplay={replay} onTrailer={toTrailer} reduced={reduced} />}
+      {film.scene === "trailer" && <Trailer film={film} reduced={reduced} onBack={backToCredits} />}
 
       {chrome && (
         <div className="film-chrome">
