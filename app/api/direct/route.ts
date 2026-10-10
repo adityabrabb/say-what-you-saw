@@ -5,7 +5,7 @@ import { z } from "zod";
 import { bestBackground, isProcedural, photoFor, type Catalog } from "@/lib/director/catalog";
 import { offlineDirect } from "@/lib/director/offline";
 import { directorPrompt } from "@/lib/director/prompt";
-import { applyShotPatch, clampSettings, patchSchema, repairPatch, settingsSchema, type ShotPatch, type ShotSettings } from "@/lib/director/settings";
+import { applyShotPatch, clampSettings, DEFAULT_SETTINGS, patchSchema, repairPatch, settingsSchema, type ShotPatch, type ShotSettings } from "@/lib/director/settings";
 import { closestIcon } from "@/lib/iconMatch";
 import { ICON_GROUPS } from "@/lib/icons";
 import { ProviderSession, type Message } from "@/lib/providers";
@@ -84,7 +84,13 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Send { line, settings }" }, { status: 400 });
   const { line } = parsed.data;
   const current = settingsSchema.safeParse(parsed.data.settings);
-  const settings: ShotSettings = clampSettings(current.success ? current.data : (parsed.data.settings as ShotSettings));
+  let settings: ShotSettings;
+  try {
+    const raw = current.success ? current.data : parsed.data.settings && typeof parsed.data.settings === "object" ? { ...DEFAULT_SETTINGS, ...(parsed.data.settings as Partial<ShotSettings>) } : DEFAULT_SETTINGS;
+    settings = clampSettings(raw);
+  } catch {
+    settings = DEFAULT_SETTINGS; // junk settings from a stray client: start from a clean shot
+  }
   const catalog = await loadCatalog();
 
   const key = JSON.stringify([line.toLowerCase(), settings]);

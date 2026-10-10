@@ -18,7 +18,7 @@ out vec4 outColor;
 
 uniform sampler2D uVideo, uMask, uBgA, uBgB, uOvFront, uOvBack;
 uniform vec2 uRes, uCrop, uMaskTexel;
-uniform float uTime, uMirror, uUseAlpha;
+uniform float uTime, uMirror, uUseAlpha, uLite;
 uniform float uBgTypeA, uBgTypeB, uBgBlurA, uBgBlurB, uBgMix;
 uniform vec3 uStudio;
 uniform vec4 uFace, uMouth;
@@ -130,6 +130,7 @@ vec3 forest(vec2 uv, float blur) {
 }
 
 vec3 sampleBlur(sampler2D t, vec2 uv, float lod) {
+  if (uLite > 0.5) return textureLod(t, uv, lod).rgb; // lite: one tap, mips already blur
   vec2 o = vec2(0.0018, 0.0032) * (1.0 + lod);
   return (textureLod(t, uv, lod).rgb * 2.0 + textureLod(t, uv + o, lod).rgb + textureLod(t, uv - o, lod).rgb
         + textureLod(t, uv + vec2(o.x, -o.y), lod).rgb + textureLod(t, uv + vec2(-o.x, o.y), lod).rgb) / 6.0;
@@ -169,6 +170,7 @@ float maskCubic(vec2 uv) {
 
 // Feathered matte: bicubic centre plus a ring of 8 soft samples (~2 mask texels out).
 float softMask(vec2 v) {
+  if (uLite > 0.5) return maskAt(v); // lite: plain bilinear mask, no bicubic or feather ring
   vec2 r = uMaskTexel * 2.2;
   float s = maskCubic(v) * 4.0;
   s += maskAt(v + vec2(r.x, 0.0)) + maskAt(v - vec2(r.x, 0.0)) + maskAt(v + vec2(0.0, r.y)) + maskAt(v - vec2(0.0, r.y));
@@ -215,7 +217,7 @@ void main() {
   person += uLightColor * rim * (0.6 + uLightInt * 0.4);
 
   // ---- Gold teeth: bright, low-saturation pixels inside the mouth ----
-  if (uTeeth > 0.01) {
+  if (uTeeth > 0.01 && uLite < 0.5) {
     vec2 dm = (uv - uMouth.xy) / max(uMouth.zw, vec2(0.004));
     float inMouth = 1.0 - smoothstep(0.75, 1.0, length(dm));
     float l = dot(person, W);
@@ -226,7 +228,7 @@ void main() {
   }
 
   // Light wrap: let a little background bleed onto the cut-out edges so it sits in the scene.
-  person = mix(person, bg, edge * 0.22);
+  if (uLite < 0.5) person = mix(person, bg, edge * 0.22);
   vec3 col = mix(bg, person, m);
 
   // ---- Colour grade ----
@@ -251,13 +253,15 @@ void main() {
   if (uOvFrontOn > 0.5) { vec4 of = texture(uOvFront, uv); col = col * (1.0 - of.a) + of.rgb; }
 
   // ---- Film grain ----
+  if (uLite < 0.5 && uGrain > 0.001) {
   float g = hash(floor(gl_FragCoord.xy / uGrainSize) + fract(uTime * 7.31) * vec2(91.7, 13.3)) - 0.5;
   g += (hash(floor(gl_FragCoord.xy / (uGrainSize * 2.0)) + fract(uTime * 3.17) * vec2(17.3, 47.9)) - 0.5) * 0.6;
   float mid = 1.0 - abs(clamp(dot(col, W), 0.0, 1.0) - 0.5) * 1.4;
   col += g * uGrain * 0.2 * (0.5 + 0.5 * mid);
+  }
 
   // ---- Light leaks (screen blend) ----
-  if (uLeaks > 0.01) {
+  if (uLeaks > 0.01 && uLite < 0.5) {
     float a = exp(-dot((uv - vec2(-0.06, 0.3 + 0.2 * sin(uTime * 0.37))) * vec2(1.5, 1.0), (uv - vec2(-0.06, 0.3 + 0.2 * sin(uTime * 0.37))) * vec2(1.5, 1.0)) * 5.0);
     float b = exp(-dot((uv - vec2(1.06, 0.78 + 0.15 * sin(uTime * 0.29 + 2.0))) * vec2(1.4, 1.0), (uv - vec2(1.06, 0.78 + 0.15 * sin(uTime * 0.29 + 2.0))) * vec2(1.4, 1.0)) * 4.0);
     float leak = (a + 0.7 * b) * (0.75 + 0.25 * sin(uTime * 1.3));
@@ -302,6 +306,7 @@ export interface FrameUniforms {
   leakColor: [number, number, number];
   overlayFront: boolean;
   overlayBack: boolean;
+  lite?: boolean;
 }
 
 type Tex = "video" | "mask" | "bgA" | "bgB" | "ovFront" | "ovBack";
@@ -434,6 +439,7 @@ export class DirectorRenderer {
     gl.uniform2f(u("uCrop"), f.crop[0], f.crop[1]);
     gl.uniform2f(u("uMaskTexel"), 1 / Math.max(1, f.maskSize[0]), 1 / Math.max(1, f.maskSize[1]));
     gl.uniform1f(u("uTime"), f.time);
+    gl.uniform1f(u("uLite"), f.lite ? 1 : 0);
     gl.uniform1f(u("uMirror"), f.mirror ? 1 : 0);
     gl.uniform1f(u("uUseAlpha"), f.useAlphaMask ? 1 : 0);
     gl.uniform1f(u("uBgTypeA"), f.bgA.type);

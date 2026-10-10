@@ -296,13 +296,17 @@ export default function DirectorStage({
       let last = performance.now();
       let frameMsAvg = 16;
       let adaptAt = last;
+      // Adaptive quality: if the picture can't hold 30 fps, switch the shader to its lite path (one-tap
+      // blur, plain mask edge, no grain/leaks/teeth/edge wrap). Stays lite for the rest of the shot.
+      let lite = false;
+      let slowChecks = 0;
       let crop: [number, number] = [1, 1];
       let raf = 0;
 
       const loop = (now: number) => {
         raf = requestAnimationFrame(loop);
         const dt = Math.min(0.1, (now - last) / 1000);
-        frameMsAvg = frameMsAvg * 0.9 + (now - last) * 0.1;
+        frameMsAvg = frameMsAvg * 0.9 + Math.min(100, now - last) * 0.1;
         last = now;
         const t = now / 1000;
 
@@ -391,6 +395,7 @@ export default function DirectorStage({
           leakColor: p.leakColor,
           overlayFront: true,
           overlayBack: ov.back,
+          lite,
         });
 
         // Capture right after drawing, while the frame is still in the buffer.
@@ -434,6 +439,13 @@ export default function DirectorStage({
         if (now - adaptAt > 1000) {
           adaptAt = now;
           tracker?.adapt(frameMsAvg);
+          if (!lite && document.visibilityState === "visible") {
+            slowChecks = frameMsAvg > 1000 / 30 ? slowChecks + 1 : 0;
+            if (slowChecks >= 3) {
+              lite = true;
+              canvasRef.current?.setAttribute("data-quality", "lite");
+            }
+          }
         }
       };
       raf = requestAnimationFrame(loop);
