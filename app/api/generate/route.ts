@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { generateScenes, type GenerateMode } from "@/lib/generate";
 import { buildOfflineScene } from "@/lib/offline";
+import { clientIp, HOUR_MS, HOURLY_LIMIT, overLimit } from "@/lib/rateLimit";
 import type { Scene } from "@/lib/scene";
 
 export const maxDuration = 60;
@@ -38,6 +39,15 @@ export async function POST(req: Request) {
   const key = `${mode}|${description.toLowerCase().replace(/\s+/g, " ")}`;
   const hit = cached(key);
   if (hit) return NextResponse.json({ ...hit, cached: true });
+
+  // Over the hourly limit: no model call, the local keyword builder answers (shown as OFFLINE BUILD).
+  if (overLimit("generate", clientIp(req), HOURLY_LIMIT, HOUR_MS)) {
+    try {
+      return NextResponse.json({ scenes: [buildOfflineScene(description, mode)], engine: "offline", limited: true });
+    } catch {
+      return NextResponse.json({ error: "Generation failed" }, { status: 502 });
+    }
+  }
 
   try {
     let result: { scenes: Scene[]; engine: string };

@@ -92,9 +92,9 @@ One object; the model only ever returns a patch; everything is clamped.
 - DEFAULT is clean: natural grade, vignette 0, grain 0, light 0, leaks 0, camera background. Effects only on request.
 
 ## API routes
-- `POST /api/generate` `{ description, mode: "recall"|"studio" }` -> `{ scenes, engine }` (engine = provider name or "offline")
+- `POST /api/generate` `{ description, mode: "recall"|"studio" }` -> `{ scenes, engine }` (engine = provider name or "offline"); 60/hour per IP, over it the local builder answers (`limited: true`), 10-min cache by description (hits don't count)
 - `POST /api/edit` `{ video, instruction, currentScene }` -> `{ video, changes, scenes, summary, engine }`
-- `POST /api/direct` `{ line, settings }` -> `{ patch, note, engine, cached? }`; 12 lines/min per IP (in-memory), 10-min cache keyed by line+settings, one retry with error feedback, then `repairPatch`, then offline keyword director.
+- `POST /api/direct` `{ line, settings }` -> `{ patch, note, engine, cached? }`; 60/hour per IP (`lib/rateLimit.ts`; over it the offline director answers, never an error; cache hits don't count), 10-min cache keyed by line+settings, one retry with error feedback, then `repairPatch`, then offline keyword director.
 - `POST /api/roast` `{ kind: answer|direction|shot|undo, said, truth, score }` -> `{ line, engine }`; always 200 (house roast on any failure), 24/min per IP, 10-min cache, one retry, line must quote a real word of `said` and avoid off-limits words.
 - `POST /api/verdict` `{ name, witnessScore, witnessMax, rounds[{title,truth,said,score}], directorLines[] }` -> `{ alias, crime, evidence[3]{quote,note}, reward, engine }`; 6/min per IP (over the limit returns the offline charge), 10-min cache, one retry, evidence must quote real, unique words.
 

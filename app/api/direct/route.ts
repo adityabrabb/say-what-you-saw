@@ -8,6 +8,7 @@ import { directorPrompt } from "@/lib/director/prompt";
 import { applyShotPatch, clampSettings, DEFAULT_SETTINGS, patchSchema, repairPatch, settingsSchema, type ShotPatch, type ShotSettings } from "@/lib/director/settings";
 import { closestIcon } from "@/lib/iconMatch";
 import { ICON_GROUPS } from "@/lib/icons";
+import { clientIp, HOUR_MS, HOURLY_LIMIT, overLimit } from "@/lib/rateLimit";
 import { ProviderSession, type Message } from "@/lib/providers";
 
 export const maxDuration = 60;
@@ -16,17 +17,6 @@ export const maxDuration = 60;
 let catalogPromise: Promise<Catalog> | null = null;
 const loadCatalog = () =>
   (catalogPromise ??= readFile(path.join(process.cwd(), "public/backgrounds/backgrounds.json"), "utf8").then((t) => JSON.parse(t) as Catalog));
-
-// ---------- Rate limit: 12 lines per minute per client ----------
-const hits = new Map<string, number[]>();
-function rateLimited(key: string): boolean {
-  const now = Date.now();
-  const recent = (hits.get(key) ?? []).filter((t) => now - t < 60_000);
-  recent.push(now);
-  hits.set(key, recent);
-  if (hits.size > 2000) hits.clear();
-  return recent.length > 12;
-}
 
 // ---------- Cache: same line + same settings -> same patch, for 10 minutes ----------
 const cache = new Map<string, { at: number; value: { patch: ShotPatch; note: string; engine: string } }>();
@@ -77,9 +67,6 @@ function sanitise(patch: ShotPatch, catalog: Catalog, line: string): ShotPatch {
 }
 
 export async function POST(req: Request) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "local";
-  if (rateLimited(ip)) return NextResponse.json({ error: "Easy, director. Too many lines in a minute; take a breath." }, { status: 429 });
-
   const parsed = body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Send { line, settings }" }, { status: 400 });
   const { line } = parsed.data;
@@ -96,6 +83,14 @@ export async function POST(req: Request) {
   const key = JSON.stringify([line.toLowerCase(), settings]);
   const hit = cached(key);
   if (hit) return NextResponse.json({ ...hit, cached: true });
+
+  // Over the hourly limit: no model call, the offline director answers and the film plays on.
+  if (overLimit("direct", clientIp(req), HOURLY_LIMIT, HOUR_MS)) {
+    const off = offlineDirect(line, settings, catalog);
+    const patch = sanitise(off.patch, catalog, line);
+    applyShotPatch(settings, patch);
+    return NextResponse.json({ patch, note: off.note, engine: "offline", limited: true });
+  }
 
   const session = new ProviderSession();
   const messages: Message[] = [
