@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import HowToPlay from "./HowToPlay";
 import SceneRenderer from "./SceneRenderer";
-import { celebrate } from "@/lib/confetti";
 import { flash, shake } from "@/lib/fx";
 import { scoreSound, sfx } from "@/lib/sound";
 import { requestScenes } from "@/lib/api";
@@ -28,8 +27,44 @@ interface RoundResult {
 const READY_SECONDS = 3.7; // 3, 2, 1, then a beat of "LOOK!"
 const LOOK_BEAT = 0.7;
 const ROUND_OPTIONS = [3, 5] as const;
-const MISSED_COLOUR = "#E5484D";
-const EXTRA_COLOUR = "#F5C518";
+// Evidence-file look (visual only): missed things get a blood-red inked circle, invented ones amber.
+const MISSED_COLOUR = "#b3161c";
+const EXTRA_COLOUR = "#c9973a";
+// The difficulties as ranks on the case folder's tabs. Display names only; the keys are unchanged.
+const RANK: Record<Difficulty, string> = { easy: "Rookie", medium: "Detective", hard: "Chief" };
+const caseNo = (n: number) => String(Math.max(1, n)).padStart(3, "0");
+
+// CCTV / evidence-camera frame drawn over a scene: REC, camera number, running timestamp, exhibit
+// tag, crop marks, faint scan lines and flicker. Pure decoration: the scene underneath is untouched.
+function Cctv({ tag, cam = 3, children, live = true }: { tag: string; cam?: number; children: React.ReactNode; live?: boolean }) {
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    if (!live) return;
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, [live]);
+  const stamp = now
+    ? `${String(now.getDate()).padStart(2, "0")}.${String(now.getMonth() + 1).padStart(2, "0")}.${now.getFullYear()}  ${now.toLocaleTimeString([], { hour12: false })}`
+    : "";
+  return (
+    <div className={live ? "cctv live" : "cctv"}>
+      {children}
+      <div className="cctv-overlay" aria-hidden>
+        <span className="cctv-rec">
+          <i /> REC
+        </span>
+        <span className="cctv-cam">CAM {cam}</span>
+        <span className="cctv-time">{stamp}</span>
+        <span className="cctv-tag">{tag}</span>
+        <span className="crop tl" />
+        <span className="crop tr" />
+        <span className="crop bl" />
+        <span className="crop br" />
+      </div>
+    </div>
+  );
+}
 
 // Pick a target from the difficulty's pool not seen yet this session; reshuffle once it runs out.
 function nextTarget(seen: Set<string>, difficulty: Difficulty): Scene {
@@ -110,12 +145,10 @@ function ScoreBreakdown({ score, seed }: { score: ScoreResult; seed: number }) {
   useEffect(() => {
     const id = setTimeout(() => {
       scoreSound(score.total);
-      if (score.total >= 50) {
-        flash("#39ff14", 0.28);
-        if (score.total >= 80) celebrate(score.total >= 95);
-      } else {
-        flash("#ff3355", 0.35);
-        shake(score.total < 25 ? 12 : 7);
+      if (score.total >= 50) flash("#e8dfcc", 0.1);
+      else {
+        flash("#5e0b0e", 0.22);
+        shake(score.total < 25 ? 6 : 4);
       }
     }, 1250);
     return () => clearTimeout(id);
@@ -125,14 +158,14 @@ function ScoreBreakdown({ score, seed }: { score: ScoreResult; seed: number }) {
     <div className="breakdown">
       <div className="total-score">
         <motion.span
-          className={`total-number ${score.total >= 80 ? "hot" : score.total < 25 ? "cold" : ""}`}
-          initial={{ scale: 0.4, opacity: 0 }}
-          animate={{ scale: [0.4, 1.15, 1], opacity: 1 }}
-          transition={{ duration: 0.5 }}
+          className={`total-number score-stamp ${score.total >= 80 ? "hot" : score.total < 25 ? "cold" : ""}`}
+          initial={{ scale: 2.2, opacity: 0, rotate: -9 }}
+          animate={{ scale: 1, opacity: 1, rotate: -4 }}
+          transition={{ duration: 0.28, ease: [0.2, 0.7, 0.3, 1] }}
         >
           {total}
+          <span className="total-of">/ 100</span>
         </motion.span>
-        <span className="total-of">/ 100</span>
       </div>
       <motion.p
         className="verdict"
@@ -173,8 +206,7 @@ function FinalTotal({ total, celebrateIt }: { total: number; celebrateIt: boolea
     const id = setTimeout(() => {
       if (celebrateIt) {
         sfx.great();
-        flash("#39ff14", 0.3);
-        celebrate(true);
+        flash("#e8dfcc", 0.12);
       } else sfx.good();
     }, 1650);
     return () => clearTimeout(id);
@@ -337,12 +369,12 @@ export default function RecallGame({
       if (beat > 0) sfx.count();
       else {
         sfx.go();
-        flash("#ff2bd6", 0.25, 250);
+        flash("#ffffff", 0.1, 250);
       }
     } else if (phase === "describe" && beat < DESCRIBE_SECONDS) {
       if (beat <= 5) {
         sfx.urgent();
-        shake(3 + (5 - beat), 260);
+        shake(2 + (5 - beat) * 0.6, 220);
       } else sfx.tick();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -350,7 +382,7 @@ export default function RecallGame({
   useEffect(() => {
     if (phase === "flash") {
       sfx.flash();
-      flash("#ffffff", 0.75, 450);
+      flash("#ffffff", 0.35, 380);
     }
     if (phase === "result") sfx.submit();
   }, [phase]);
@@ -375,13 +407,13 @@ export default function RecallGame({
   }, [phase, phaseStart, phaseLength]);
 
   const hud = phase !== "pick" && phase !== "final" && (
-    <div className="hud">
+    <div className="hud case-hud">
       <span>
-        Round <strong>{roundNumber}</strong>/{rounds}
+        Case File {caseNo(gameId.current)} · Round <strong>{roundNumber}</strong> of {rounds}
       </span>
-      <span>{DIFFICULTIES[difficulty].label}</span>
+      <span className="hud-rank">{RANK[difficulty]}</span>
       <span>
-        Total <strong><RollingNumber value={runningTotal} /></strong>
+        Evidence score <strong><RollingNumber value={runningTotal} /></strong>
       </span>
     </div>
   );
@@ -400,35 +432,44 @@ export default function RecallGame({
 
   if (phase === "pick") {
     return (
-      <div className="recall-card center">
-        <h2>Pick a difficulty</h2>
-        <p className="muted">
-          The scene flashes, then disappears. You get {DESCRIBE_SECONDS} seconds to describe it.
-        </p>
-        <div className="difficulties">
+      <div className="case-folder">
+        <div className="folder-tabs" role="tablist" aria-label="Rank">
           {(Object.keys(DIFFICULTIES) as Difficulty[]).map((d) => (
-            <button key={d} className={d === difficulty ? "diff active" : "diff"} onClick={() => setDifficulty(d)}>
-              <strong>{DIFFICULTIES[d].label}</strong>
+            <button
+              key={d}
+              role="tab"
+              aria-selected={d === difficulty}
+              className={d === difficulty ? "folder-tab active" : "folder-tab"}
+              onClick={() => setDifficulty(d)}
+            >
+              <strong>{RANK[d]}</strong>
               <span>{DIFFICULTIES[d].flashSeconds}s look</span>
             </button>
           ))}
         </div>
-        <div className="difficulties rounds">
-          {ROUND_OPTIONS.map((n) => (
-            <button key={n} className={n === rounds ? "diff active" : "diff"} onClick={() => setRounds(n)}>
-              <strong>{n} rounds</strong>
-              <span>out of {n * 100}</span>
+        <div className="recall-card center folder-body">
+          <p className="file-label">Case File {caseNo(gameId.current + 1)} · Classified</p>
+          <h2>Choose your rank</h2>
+          <p className="muted">
+            The footage plays once, then it&apos;s gone. You get {DESCRIBE_SECONDS} seconds to give your statement.
+          </p>
+          <div className="difficulties rounds">
+            {ROUND_OPTIONS.map((n) => (
+              <button key={n} className={n === rounds ? "diff active" : "diff"} onClick={() => setRounds(n)}>
+                <strong>{n} rounds</strong>
+                <span>out of {n * 100}</span>
+              </button>
+            ))}
+          </div>
+          <p className="muted best">Best: {best > 0 ? `${best} / ${rounds * 100}` : "none yet"}</p>
+          <div className="row-end centered">
+            <button className="ghost" onClick={() => setTutorial(true)}>
+              How to play
             </button>
-          ))}
-        </div>
-        <p className="muted best">Best: {best > 0 ? `${best} / ${rounds * 100}` : "none yet"}</p>
-        <div className="row-end centered">
-          <button className="ghost" onClick={() => setTutorial(true)}>
-            How to play
-          </button>
-          <button className="primary" onClick={startGame}>
-            Start
-          </button>
+            <button className="primary" onClick={startGame}>
+              Start
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -448,10 +489,12 @@ export default function RecallGame({
               exit={{ scale: 0.3, opacity: 0 }}
               transition={{ type: "spring", stiffness: 400, damping: 18 }}
             >
-              {beat > 0 ? beat : "LOOK!"}
+              {beat > 0 ? beat : "LOOK"}
             </motion.div>
           </AnimatePresence>
-          <p className="muted">Get ready to look…</p>
+          <p className="muted">
+            Memorize it in {flashSeconds} second{flashSeconds === 1 ? "" : "s"}.
+          </p>
         </div>
       </>
     );
@@ -461,12 +504,14 @@ export default function RecallGame({
     return (
       <>
         {hud}
-        <div className="recall-card">
+        <div className="recall-card evidence-card">
           <div className="flash-bar">
             <span style={{ width: `${(remaining / flashSeconds) * 100}%` }} />
           </div>
-          <SceneRenderer scene={current.target} time={elapsed} />
-          <p className="muted center-text">Memorise it! {remaining.toFixed(1)}s</p>
+          <Cctv tag="EXHIBIT A">
+            <SceneRenderer scene={current.target} time={elapsed} />
+          </Cctv>
+          <p className="muted center-text">Memorize it. {remaining.toFixed(1)}s</p>
         </div>
       </>
     );
@@ -477,9 +522,12 @@ export default function RecallGame({
     return (
       <>
         {hud}
-        <div className={secs <= 5 ? "recall-card urgent-card" : "recall-card"}>
+        <div className={secs <= 5 ? "recall-card statement-card urgent-card" : "recall-card statement-card"}>
           <div className="describe-head">
-            <h2>What did you see?</h2>
+            <div>
+              <p className="file-label">Case File {caseNo(gameId.current)} · Exhibit A</p>
+              <h2>Witness Statement</h2>
+            </div>
             <motion.div
               key={secs}
               className={secs <= 5 ? "timer urgent" : "timer"}
@@ -500,12 +548,13 @@ export default function RecallGame({
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) submit();
             }}
-            placeholder="Things, colours, the backdrop, where everything was, how it moved…"
+            className="statement"
+            placeholder="I saw… the things, their colours, the place, where everything was, how it moved."
             rows={6}
           />
           <div className="row-end">
-            <button className="primary" onClick={submit}>
-              Submit
+            <button className="primary stamp-btn" onClick={submit}>
+              File Statement
             </button>
           </div>
         </div>
@@ -524,10 +573,13 @@ export default function RecallGame({
       <>
         {hud}
         <div className="recall-card">
-          <div className="result-grid">
-            <div>
-              <p className="label">The scene</p>
-              <SceneRenderer scene={target} time={5} highlights={highlightsTarget} />
+          <div className="result-grid evidence-photos">
+            <figure className="photo left">
+              <span className="tape" aria-hidden />
+              <p className="label">Exhibit A · The footage</p>
+              <Cctv tag="EXHIBIT A" live={false}>
+                <SceneRenderer scene={target} time={5} highlights={highlightsTarget} />
+              </Cctv>
               {score && score.missed.length > 0 && (
                 <p className="legend">
                   <span className="dot" style={{ background: MISSED_COLOUR }} /> Missed:{" "}
@@ -538,10 +590,11 @@ export default function RecallGame({
                     .join(", ")}
                 </p>
               )}
-            </div>
-            <div>
+            </figure>
+            <figure className="photo right">
+              <span className="tape" aria-hidden />
               <p className="label">
-                Your scene{current.offline && <span className="offline-badge">OFFLINE BUILD</span>}
+                Exhibit B · Your statement{current.offline && <span className="offline-badge">OFFLINE BUILD</span>}
               </p>
               {generated ? (
                 <SceneRenderer scene={generated} time={5} highlights={highlightsPlayer} />
@@ -555,7 +608,7 @@ export default function RecallGame({
                     <>
                       <span className="reel" aria-hidden />
                       <span className="reviewing-text">
-                        The director is reviewing the footage<span className="dots" aria-hidden />
+                        The director is reviewing the footage<span className="reviewing-dots" aria-hidden />
                       </span>
                     </>
                   )}
@@ -572,7 +625,7 @@ export default function RecallGame({
                 </p>
               )}
               {error && <p className="error">{error}</p>}
-            </div>
+            </figure>
           </div>
 
           {score ? (
@@ -590,7 +643,7 @@ export default function RecallGame({
           ) : null}
 
           <p className="label" style={{ marginTop: 16 }}>
-            You said
+            Statement on file
           </p>
           <blockquote className="said">{said || <em className="muted">…crickets…</em>}</blockquote>
 
@@ -619,7 +672,8 @@ export default function RecallGame({
     const max = rounds * 100;
     return (
       <div className="recall-card center">
-        <p className="label">Final score</p>
+        <p className="file-label">Case File {caseNo(gameId.current)} · Closed</p>
+        <p className="label">Final evidence score</p>
         <div className="total-score">
           <span className="total-number">
             <FinalTotal total={runningTotal} celebrateIt={newBest} />
