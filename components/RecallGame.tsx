@@ -220,6 +220,8 @@ export interface RecallRound {
   truth: string; // what was really in the scene, in words
   said: string;
   score: number;
+  missed?: string[]; // names of what the witness left out (report only; the evidence trail reads these)
+  extra?: string[]; // names of what they invented
 }
 
 export interface RecallFinish {
@@ -235,6 +237,8 @@ const roundReport = (r: RoundResult): RecallRound => ({
   truth: r.target.objects.map(describeObject).join(", "),
   said: r.said,
   score: r.score?.total ?? 0,
+  missed: (r.score?.missed ?? []).map((id) => r.target.objects.find((o) => o.id === id)).filter((o) => o).map((o) => describeObject(o!)),
+  extra: (r.score?.extra ?? []).map((id) => r.generated?.objects.find((o) => o.id === id)).filter((o) => o).map((o) => describeObject(o!)),
 });
 
 export default function RecallGame({

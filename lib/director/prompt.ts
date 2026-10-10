@@ -1,6 +1,6 @@
 import { ICON_NAMES } from "../icons";
 import type { Catalog } from "./catalog";
-import { ANCHORS, ANIMATIONS, GRADE_PRESETS, PROCEDURAL_BACKGROUNDS } from "./settings";
+import { ANCHORS, ANIMATIONS, GRADE_PRESETS } from "./settings";
 
 export function directorPrompt(catalog: Catalog): string {
   const images = catalog.images.map((i) => `${i.id} [${i.time}; ${[...i.tags.slice(0, 6), ...i.moods.slice(0, 3)].join(", ")}]`).join("\n");
@@ -10,8 +10,8 @@ The patch contains ONLY what changes. Never repeat unchanged fields. Keep it sma
 The shot starts as the clean, unfiltered camera. Only add grain, vignette, leaks, grades or light when the director asks for them or the requested look clearly needs them.
 
 Settings shape (all optional in a patch):
-- background: {"type": "camera"|"image"|"procedural", "id": string, "blur": 0-1, "color": "#rrggbb" (studio-backdrop tint)}
-  "camera" keeps the real room (id "camera"; use blur for a bokeh look). Prefer a matching image; if nothing fits use a procedural id.
+- background: {"type": "camera"|"image", "id": string, "blur": 0-1}
+  "camera" keeps the real room (id "camera"; use blur for a bokeh look). Always choose a real photo from IMAGE BACKGROUNDS (closest place and time of day, even if the match is loose); use "camera" only when the director wants the real room back.
 - grade: {"preset": ${GRADE_PRESETS.map((p) => `"${p}"`).join("|")}, "exposure": -2..2 stops, "contrast": 0.5-2, "saturation": 0-2, "temperature": -1 cool..1 warm, "tint": -1 green..1 magenta, "fade": 0-1, "vignette": 0-1}
 - light (key light on the person, shaped to their face): {"angle": degrees the light comes FROM (0 right, 90 above, 180 left, 270 below), "color": "#rrggbb", "intensity": 0-2 (0 = off, 1 = strong), "softness": 0-1, "rim": 0-1 edge light}
 - grain: {"amount": 0-1, "size": 1-3}   leaks: {"amount": 0-1 film light leaks, "hue": 0-360}
@@ -28,8 +28,6 @@ Example: "Put me on top of a rooftop at night." -> the rooftop image with time "
 
 IMAGE BACKGROUNDS:
 ${images}
-
-PROCEDURAL BACKGROUNDS: ${PROCEDURAL_BACKGROUNDS.join(", ")}
 
 ICONS: ${ICON_NAMES.join(", ")}
 

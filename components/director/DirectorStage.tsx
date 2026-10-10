@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Catalog, Credit } from "@/lib/director/catalog";
+import { photoFor, type Catalog, type Credit } from "@/lib/director/catalog";
 import { DirectorRenderer, type FrameUniforms } from "@/lib/director/gl";
 import { lookFor } from "@/lib/director/grades";
 import { dateStamp, OverlayLayer } from "@/lib/director/overlays";
@@ -274,7 +274,11 @@ export default function DirectorStage({
       e.renderer = renderer;
       e.overlays = new OverlayLayer();
       const silhouette = e.demo ? new Silhouette() : null;
-      if (e.demo) applySettings({ ...e.settings, background: { ...e.settings.background, type: "procedural", id: "studio-backdrop" } });
+      if (e.demo) {
+        // The demo subject stands in a real photo (the lamplit room) rather than a generated backdrop.
+        const room = photoFor(e.catalog, "studio-backdrop");
+        applySettings({ ...e.settings, background: { ...e.settings.background, ...(room ? { type: "image" as const, id: room } : { type: "procedural" as const, id: "studio-backdrop" }) } });
+      }
       setPhase("live");
 
       let tracker: Tracker | null = null;

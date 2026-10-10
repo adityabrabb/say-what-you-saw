@@ -27,7 +27,23 @@ export interface Catalog {
   procedural: ProceduralEntry[];
 }
 
-// Score every background against some text; images win ties only if they really fit.
+// Real photos are always preferred. Each generated backdrop has a photo that stands in for it, so the
+// Director never shows a procedural scene while a matching photograph exists.
+export const PHOTO_FOR_PROCEDURAL: Record<string, string> = {
+  "neon-rain-city": "noir-rainy-avenue",
+  "star-field": "northern-lights",
+  "sunset-gradient": "noir-skyline-dusk",
+  "studio-backdrop": "noir-lamplit-room",
+  "foggy-forest": "noir-misty-pines",
+};
+
+export function photoFor(catalog: Catalog | null | undefined, proceduralId: string): string | null {
+  const id = PHOTO_FOR_PROCEDURAL[proceduralId];
+  return id && catalog?.images.some((i) => i.id === id) ? id : null;
+}
+
+// Score every background against some text. Photos win over generated backdrops (a generated one
+// only wins when no photo matches at all, and then it is swapped for its photo if it has one).
 // Returns null when nothing matches at all.
 export function bestBackground(catalog: Catalog, text: string): { type: "image" | "procedural"; id: string } | null {
   const t = ` ${text.toLowerCase()} `;
@@ -40,11 +56,17 @@ export function bestBackground(catalog: Catalog, text: string): { type: "image" 
     const s = score(img);
     if (s > 0 && (!best || s > best.s)) best = { type: "image", id: img.id, s };
   }
+  if (best) return { type: "image", id: best.id };
   for (const p of catalog.procedural) {
     const s = score(p);
     if (s > 0 && (!best || s > best.s)) best = { type: "procedural", id: p.id, s };
   }
-  return best ? { type: best.type, id: best.id } : null;
+  if (best?.type === "image") return { type: "image", id: best.id };
+  if (best) {
+    const photo = photoFor(catalog, best.id);
+    return photo ? { type: "image", id: photo } : { type: "procedural", id: best.id };
+  }
+  return null;
 }
 
 export const isProcedural = (id: string) => (PROCEDURAL_BACKGROUNDS as readonly string[]).includes(id);

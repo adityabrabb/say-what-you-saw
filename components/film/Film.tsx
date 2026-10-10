@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import RecallGame, { type RecallFinish, type RecallRound } from "@/components/RecallGame";
 import Verdict from "./Verdict";
 import DirectorHost from "./DirectorHost";
+import { evidenceTags, hasEvidence } from "@/lib/evidence";
 import { host } from "@/lib/roast/host";
 import { requestRoast } from "@/lib/roast/client";
 import type { DirectorWrap } from "@/components/director/DirectorStage";
@@ -21,9 +22,23 @@ const Trailer = dynamic(() => import("./Trailer"), { ssr: false });
 // WebGL + MediaPipe only load when the film reaches Act II.
 const DirectorStage = dynamic(() => import("@/components/director/DirectorStage"), { ssr: false });
 
-// "reel" is the act change: two cue marks tick in the corner, the reel changes over, then the film burns through.
-type Cut = "burn" | "reel" | "cut" | "none";
-const CUT_MS: Record<Exclude<Cut, "none">, [number, number]> = { burn: [700, 1500], reel: [1700, 2500], cut: [180, 700] }; // [swap scene at, end]
+// Act 2.5 and the Memory+ break are a first-visit joke: once seen, a returning visitor goes straight to Act II.
+const BREAK_KEY = "swys-break-seen";
+const breakSeen = () => {
+  try {
+    return localStorage.getItem(BREAK_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+const markBreakSeen = () => {
+  try {
+    localStorage.setItem(BREAK_KEY, "1");
+  } catch {}
+};
+
+type Cut = "burn" | "cut" | "none";
+const CUT_MS: Record<Exclude<Cut, "none">, [number, number]> = { burn: [700, 1500], cut: [180, 700] }; // [swap scene at, end]
 const DRONE: Record<SceneId, number> = { opening: 1, cast: 1, "act1-card": 1, act1: 0.3, act25: 0.6, ad: 0.3, "act2-card": 1, act2: 0.2, act3: 0.15, credits: 0.8, trailer: 0.02 };
 
 const MENU: { scene: SceneId; label: string }[] = [
@@ -52,6 +67,7 @@ export default function Film() {
   const [menu, setMenu] = useState(false);
   const [recallPhase, setRecallPhase] = useState("pick");
   const [scoring, setScoring] = useState(false); // a Recall round is waiting for its score
+  const [filed, setFiled] = useState<RecallRound[]>([]); // evidence filed so far in Act I (read from Recall's report hook)
   const settledAt = useRef(0);
   useSyncExternalStore(host.subscribe, host.getVersion, () => 0); // re-render when the director's voice is toggled
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -131,16 +147,10 @@ export default function Film() {
       const k = reduced ? "cut" : kind;
       const [at, end] = CUT_MS[k];
       if (k === "burn") filmSfx.burn();
-      const sounds: ReturnType<typeof setTimeout>[] = [];
-      if (k === "reel") {
-        filmSfx.cue();
-        sounds.push(setTimeout(filmSfx.cue, 450), setTimeout(filmSfx.reelChange, 820), setTimeout(filmSfx.burn, 1000));
-      }
       setFx({ kind: k, key: Date.now() });
       timers.current = [
         setTimeout(() => update({ ...patch, scene: next }), at),
         setTimeout(() => setFx(null), end),
-        ...sounds,
       ];
     },
     [reduced, update]
@@ -148,19 +158,31 @@ export default function Film() {
 
   const openingDone = useCallback(() => go("cast", "burn", { seen: true }), [go]);
   const castDone = useCallback((name: string) => go("act1-card", "cut", { name }), [go]);
-  const act1Done = useCallback(() => go("act1", "cut"), [go]);
+  const act1Done = useCallback(() => (setFiled([]), go("act1", "cut")), [go]);
   const act2Done = useCallback(() => go("act2", "cut"), [go]);
-  const act25Done = useCallback(() => go("ad", "cut"), [go]);
-  const adDone = useCallback(() => go("act2-card", "reel"), [go]);
+  const act25Done = useCallback(() => {
+    markBreakSeen();
+    go("ad", "cut");
+  }, [go]);
+  const adDone = useCallback(() => go("act2-card", "burn"), [go]);
   const witness = useCallback((r: RecallFinish) => update({ witness: r }), [update]);
 
   // The director's lines. Report-only hooks: Recall and Director never wait for any of this.
   const onRound = useCallback((r: RecallRound, i: number, total: number) => {
     setScoring(false);
     settledAt.current = Date.now();
+    setFiled((f) => {
+      const next = f.slice(0, i);
+      next[i] = r;
+      return next;
+    });
     if (i + 1 < total) host.say(`Interruption. Round ${i + 2}. Try not to embarrass yourself.`, "interrupt", { maxAgeMs: 30_000 });
     const since = Date.now();
-    void requestRoast({ kind: "answer", said: r.said, truth: r.truth, score: r.score }).then((res) => host.say(res.line, "roast", { since }));
+    void requestRoast({ kind: "answer", said: r.said, truth: r.truth, score: r.score }).then((res) => {
+      host.say(res.line, "roast", { since });
+      // The plant: the director files what the witness got wrong, and sounds far too interested.
+      if (hasEvidence(r) && i < 2) host.say("Noted. Very interesting.", "react", { since });
+    });
   }, []);
   // Recall reports a silent round in the same instant it enters the result screen, before React could
   // re-render the film. So the director's quiet time is lifted here, synchronously, not in an effect.
@@ -185,7 +207,7 @@ export default function Film() {
   );
   const replay = useCallback(() => go("act1-card", "burn", { witness: null, director: null, verdict: null }), [go]);
   const verdict = useCallback((v: VerdictResult) => update({ verdict: v }), [update]);
-  const toCredits = useCallback(() => go("credits", "reel"), [go]);
+  const toCredits = useCallback(() => go("credits", "burn"), [go]);
   const toTrailer = useCallback(() => go("trailer", "burn"), [go]);
   const backToCredits = useCallback(() => go("credits", "cut"), [go]);
 
@@ -200,13 +222,25 @@ export default function Film() {
       {film.scene === "act1" && (
         <main className="film-act1">
           <p className="act-label">Act I · The Witness</p>
+          <div className="evidence-row" aria-label="Evidence on file">
+            <span className="ev-count">
+              Evidence on file <b>{String(filed.length).padStart(2, "0")}</b>
+            </span>
+            {filed.length > 0 &&
+              evidenceTags(filed[filed.length - 1]).map((t) => (
+                <span key={`${filed.length}-${t}`} className="ev-tag">
+                  <i>{filed.length}</i>
+                  {t}
+                </span>
+              ))}
+          </div>
           <RecallGame onFinish={witness} onRound={onRound} onPhase={onPhase} />
           {film.witness && (
             <div className="film-next">
               <span>
                 Testimony recorded: <strong>{film.witness.score}</strong> / {film.witness.max}
               </span>
-              <button className="film-btn" onClick={() => go("act25", "reel")}>
+              <button className="film-btn" onClick={() => go(breakSeen() ? "act2-card" : "act25", "burn")}>
                 On to Act II ▸
               </button>
             </div>
@@ -257,16 +291,7 @@ export default function Film() {
         onRetake={RETAKE[film.scene] ? () => go(RETAKE[film.scene]!, "cut", film.scene === "act3" ? { verdict: null } : {}) : undefined}
       />
 
-      {fx && fx.kind !== "none" && (
-        <div className={`film-fx ${fx.kind === "reel" ? "changeover" : fx.kind}`} key={fx.key} aria-hidden>
-          {fx.kind === "reel" && (
-            <>
-              <span className="cue c1" />
-              <span className="cue c2" />
-            </>
-          )}
-        </div>
-      )}
+      {fx && fx.kind !== "none" && <div className={`film-fx ${fx.kind}`} key={fx.key} aria-hidden />}
     </div>
   );
 }

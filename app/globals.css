@@ -1491,8 +1491,8 @@ a.dir-chip:hover { color: var(--paper); border-color: var(--paper-dim); }
 .title-stage.gl .spot-beam { display: none; }
 .title-stage.gl .film-title { animation: none; opacity: 0; transition: opacity 1.1s ease; text-shadow: none; }
 .title-stage.gl.lit .film-title { opacity: 1; text-shadow: 0 0 22px rgba(232, 223, 204, 0.18), 0 14px 32px rgba(0, 0, 0, 0.6); }
-.title-stage.gl:not(.boxed) .film-kicker, .title-stage.gl:not(.boxed) .direction-box { animation: none; opacity: 0; }
-.title-stage.gl.boxed .film-kicker, .title-stage.gl.boxed .direction-box { animation: fade-up 1s ease both; }
+.title-stage.gl:not(.boxed) .film-kicker, .title-stage.gl:not(.boxed) .film-premise, .title-stage.gl:not(.boxed) .direction-box { animation: none; opacity: 0; }
+.title-stage.gl.boxed .film-kicker, .title-stage.gl.boxed .film-premise, .title-stage.gl.boxed .direction-box { animation: fade-up 1s ease both; }
 
 /* Act 2.5: a page that is not there. Chromatic split and jitter on the letters, no neon. */
 .nf { background: radial-gradient(ellipse at 50% 30%, #1b1a18 0%, #0c0c0c 70%); }
@@ -1541,52 +1541,8 @@ a.dir-chip:hover { color: var(--paper); border-color: var(--paper-dim); }
   .nf-title, .nf-code, .nf-title::before, .nf-title::after, .nf-code::before, .nf-code::after, .ad-card { animation: none !important; }
 }
 
-/* Reel change: cue marks (the little rings in the top-right corner) tick twice, then the film burns through. */
-.film-fx.changeover { animation: burn-black 1.5s ease 0.95s both; }
-.film-fx.changeover::before {
-  content: ""; position: absolute; inset: -20%;
-  background:
-    radial-gradient(circle at 72% 38%, #fff4d6 0%, #ffb547 9%, #d9531e 20%, rgba(80, 18, 0, 0.9) 34%, transparent 52%),
-    radial-gradient(circle at 24% 70%, rgba(255, 210, 140, 0.9) 0%, rgba(214, 80, 20, 0.7) 14%, transparent 34%);
-  filter: blur(10px); animation: burn-bloom 1.5s ease-in-out 0.95s both;
-}
-.cue { position: absolute; top: 5.5%; right: 4.5%; width: clamp(18px, 2.6vw, 34px); aspect-ratio: 1; border-radius: 50%; border: 3px solid rgba(243, 236, 220, 0.92); background: rgba(243, 236, 220, 0.16); opacity: 0; animation: cue-flash 0.28s steps(1) forwards; }
-.cue.c1 { animation-delay: 0.05s; }
-.cue.c2 { animation-delay: 0.5s; }
-@keyframes cue-flash { 0% { opacity: 1; } 100% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .film-fx.changeover::before { display: none; } }
-
-/* Credits in 3D: a ghost title far back, film strips beside the roll, dust right in front of the lens.
-   Each layer sits at its own depth and drifts at its own speed, and the camera follows the pointer. */
-.credits { perspective: 900px; perspective-origin: calc(50% + var(--px, 0) * 70px) calc(42% + var(--py, 0) * 40px); overflow: hidden; }
-.credits-viewport { transform: rotateY(calc(var(--px, 0) * -2.5deg)) rotateX(calc(var(--py, 0) * 1.5deg)); transform-style: preserve-3d; transition: transform 0.4s ease-out; }
-.cr-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-.cr-layer.far { transform: translateZ(-420px) scale(1.7); opacity: 0.1; display: grid; place-content: center; text-align: center; gap: 4vh; }
-.cr-ghost { display: block; font-family: var(--font-serif-stack); font-weight: 600; font-size: clamp(60px, 14vw, 190px); line-height: 1; color: var(--paper); white-space: nowrap; animation: cr-far 60s linear infinite alternate; }
-.cr-ghost.two { font-family: var(--type); font-size: clamp(24px, 5vw, 70px); color: var(--blood-hot); animation-duration: 45s; animation-direction: alternate-reverse; }
-@keyframes cr-far { from { transform: translateY(-5vh); } to { transform: translateY(5vh); } }
-.cr-layer.strips { transform: translateZ(-120px) scale(1.12); }
-.cr-strip-film { position: absolute; top: -200%; bottom: 0; width: clamp(34px, 6vw, 68px); height: 400%; background:
-    radial-gradient(circle at 50% 50%, #000 0 22%, transparent 24%) 0 0 / 100% 48px,
-    #1c1b19;
-  opacity: 0.55; animation: cr-strips 11s linear infinite; }
-.cr-strip-film.l { left: 3%; }
-.cr-strip-film.r { right: 3%; animation-duration: 14s; }
-@keyframes cr-strips { from { transform: translateY(0); } to { transform: translateY(25%); } }
-.cr-layer.dust { z-index: 3; transform: translateZ(300px); opacity: 0.5; background:
-    radial-gradient(circle, rgba(232, 223, 204, 0.5) 0 1.2px, transparent 2px) 0 0 / 190px 230px,
-    radial-gradient(circle, rgba(232, 223, 204, 0.35) 0 1px, transparent 2px) 60px 90px / 260px 170px,
-    radial-gradient(circle, rgba(232, 223, 204, 0.6) 0 2px, transparent 3px) 130px 40px / 410px 330px;
-  animation: cr-dust 9s linear infinite; }
-@keyframes cr-dust { from { background-position: 0 0, 60px 90px, 130px 40px; } to { background-position: -30px 230px, 30px 260px, 90px 370px; } }
-@media (prefers-reduced-motion: reduce) {
-  .credits-viewport { transform: none; transition: none; }
-  .cr-ghost, .cr-strip-film, .cr-layer.dust { animation: none !important; }
-}
-
 .title-stage.gl .floor-pool { opacity: 0; transition: opacity 1.4s ease; }
 .title-stage.gl.lit .floor-pool { opacity: 1; }
-.cr-ghost.two { opacity: 0.45; }
 
 /* Phase 4: the trailer */
 .trailer { position: fixed; inset: 0; z-index: 10; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 56px 16px 16px; }
@@ -1605,3 +1561,18 @@ a.dir-chip:hover { color: var(--paper); border-color: var(--paper-dim); }
 /* The score/verdict stamps slam in from 2.2x scale; on a phone that briefly made the page wider than the
    screen, so the browser zoomed out and taps landed on the wrong spot. Clip sideways overflow inside the card. */
 .recall-card { overflow-x: clip; }
+
+/* The premise, in the director's dry voice, right under the title */
+.film-premise { position: relative; margin: 2px 0 0; max-width: 34em; font-family: var(--type); font-size: clamp(13px, 1.7vw, 18px); line-height: 1.4; color: var(--paper); animation: fade-up 1s ease 1.4s both; }
+.film-premise b { color: var(--blood-hot); font-family: var(--font-ui); font-size: 0.72em; letter-spacing: 0.18em; text-transform: uppercase; margin-right: 0.5em; }
+
+/* Act I: the case file counter and the evidence tags (always reserved, so nothing jumps when one lands) */
+.evidence-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-height: 30px; margin: -8px 0 14px; font-family: var(--font-ui); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cream-dim); }
+.ev-count b { color: var(--paper); font-weight: 700; margin-left: 4px; }
+.ev-tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px 3px 4px; border: 1px solid var(--warm-line); border-left: 3px solid var(--blood); background: rgba(13, 13, 14, 0.7); color: var(--paper); border-radius: 1px; animation: ev-file 0.35s ease both; }
+.ev-tag i { display: inline-grid; place-items: center; width: 16px; height: 16px; border: 1px solid var(--blood-hot); border-radius: 50%; font-style: normal; font-size: 10px; color: var(--blood-hot); }
+@keyframes ev-file { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (max-width: 640px) { .evidence-row { margin-top: -4px; min-height: 64px; align-content: flex-start; font-size: 10px; letter-spacing: 0.08em; } }
+@media (prefers-reduced-motion: reduce) { .ev-tag { animation: none; } }
+.trailer-actions { min-height: 40px; }
+.trailer-note.small { min-height: 1.5em; }

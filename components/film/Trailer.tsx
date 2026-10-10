@@ -206,8 +206,9 @@ function TrailerPlayer({ film, reduced, onBack }: { film: FilmState; reduced: bo
           Back to credits
         </button>
       </div>
-      {phase === "done" && recorded === false && <p className="trailer-note small">Your browser can&apos;t record the trailer, so it is watch-only. It still counts.</p>}
-      {phase === "playing" && <p className="trailer-note small">Sound on. Trust me.</p>}
+      <p className="trailer-note small">
+        {phase === "done" && recorded === false ? "Your browser can't record the trailer, so it is watch-only. It still counts." : phase === "playing" ? "Sound on. Trust me." : " "}
+      </p>
     </div>
   );
 }

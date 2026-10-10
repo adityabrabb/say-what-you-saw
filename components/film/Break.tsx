@@ -19,8 +19,8 @@ export function NotFound({ onDone, reduced }: { onDone: () => void; reduced: boo
         clearInterval(stutter);
         setFixed(true);
         host.say("Kidding. Budget cuts. A word from our sponsors.", "interrupt", { maxAgeMs: 20_000 });
-      }, reduced ? 2400 : 3600),
-      setTimeout(onDone, reduced ? 8000 : 9500)
+      }, reduced ? 2000 : 2800),
+      setTimeout(onDone, reduced ? 6000 : 6800)
     );
     return () => {
       clearInterval(stutter);
@@ -49,7 +49,7 @@ export function NotFound({ onDone, reduced }: { onDone: () => void; reduced: boo
   );
 }
 
-const AD_SECONDS = 15;
+const AD_SECONDS = 10;
 
 // The sponsor: "Memory+ — for people like you". The Skip button only works on the second click.
 export function CommercialBreak({ score, max, onDone, reduced }: { score: number | null; max: number; onDone: () => void; reduced: boolean }) {
@@ -78,7 +78,7 @@ export function CommercialBreak({ score, max, onDone, reduced }: { score: number
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const slide = Math.min(3, Math.floor(t / 3.75));
+  const slide = Math.min(3, Math.floor(t / (AD_SECONDS / 4)));
   useEffect(() => {
     if (slide === 1) breakSfx.jingle();
   }, [slide]);

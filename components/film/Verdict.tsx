@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { download, starName, type FilmState, type VerdictResult } from "@/lib/film";
 import { drone, filmSfx, verdictSfx } from "@/lib/sound";
+import { exhibitsFrom } from "@/lib/evidence";
 import { offlineCharge } from "@/lib/verdict/offline";
 import { drawPoster, mugshotSketch, PHOTO, POSTER_H, POSTER_W, posterBack, posterRect, STAMP, stampCanvas } from "@/lib/verdict/poster";
 import type { CaseFile, Charge } from "@/lib/verdict/schema";
@@ -201,7 +202,9 @@ export default function Verdict({
 
   // Charges are filed the moment the frame freezes, so they're ready by the time the poster forms.
   const charge = useRef<Promise<Filed> | null>(null);
-  if (!done && !charge.current && typeof window !== "undefined") charge.current = fileCharges(file);
+  if (!done && !charge.current && typeof window !== "undefined")
+    // Exhibits A, B and C are the witness's own mistakes from Act I (the same tags they watched being filed).
+    charge.current = fileCharges(file).then((f) => ({ ...f, evidence: exhibitsFrom(film.witness?.rounds ?? [], f.evidence) as Filed["evidence"] }));
 
   useEffect(() => {
     const measure = () => setSize({ w: window.innerWidth, h: window.innerHeight });

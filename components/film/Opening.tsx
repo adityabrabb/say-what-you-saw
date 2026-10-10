@@ -144,6 +144,9 @@ function TitleCard({ onRoll, reduced }: { onRoll: () => void; reduced: boolean }
         Say What You Saw
       </h1>
       <p className="film-kicker">a short film · starring you · directed by your voice</p>
+      <p className="film-premise">
+        <b>The Director:</b> A crime was committed. You saw it. Prove it.
+      </p>
 
       <form className="direction-box" onSubmit={submit}>
         <label className="direction-label" htmlFor="roll-line">

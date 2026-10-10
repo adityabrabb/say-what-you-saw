@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { bestBackground, isProcedural, type Catalog } from "@/lib/director/catalog";
+import { bestBackground, isProcedural, photoFor, type Catalog } from "@/lib/director/catalog";
 import { offlineDirect } from "@/lib/director/offline";
 import { directorPrompt } from "@/lib/director/prompt";
 import { applyShotPatch, clampSettings, patchSchema, repairPatch, settingsSchema, type ShotPatch, type ShotSettings } from "@/lib/director/settings";
@@ -57,12 +57,18 @@ function sanitise(patch: ShotPatch, catalog: Catalog, line: string): ShotPatch {
     const id = p.background.id;
     const isImage = catalog.images.some((i) => i.id === id);
     if (isImage) p.background.type = "image";
-    else if (isProcedural(id)) p.background.type = "procedural";
+    else if (isProcedural(id)) {
+      // Real photos first: a generated backdrop is swapped for its photograph whenever there is one.
+      const photo = photoFor(catalog, id);
+      if (photo) p.background = { ...p.background, type: "image", id: photo };
+      else p.background.type = "procedural";
+    }
     else if (id === "camera") p.background.type = "camera";
     else {
-      // Unknown id: pick the best catalogued match for the line, else a procedural scene.
+      // Unknown id: pick the best photo for the line, else the plain lamplit room.
       const best = bestBackground(catalog, `${line} ${id}`);
-      p.background = { ...p.background, ...(best ?? { type: "procedural", id: "studio-backdrop" }) };
+      const room = photoFor(catalog, "studio-backdrop");
+      p.background = { ...p.background, ...(best ?? (room ? { type: "image" as const, id: room } : { type: "procedural" as const, id: "studio-backdrop" })) };
     }
   }
   for (const o of [...(p.overlays?.add ?? []), ...(p.overlays?.update ?? [])])

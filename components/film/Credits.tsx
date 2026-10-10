@@ -1,13 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { buildCreditsCard, download, starName, type FilmState } from "@/lib/film";
 
 // Rolling end credits with the photo strip in the middle, and the three things you can take home.
 export default function Credits({ film, onReplay, onTrailer, reduced }: { film: FilmState; onReplay: () => void; onTrailer: () => void; reduced: boolean }) {
   const [busy, setBusy] = useState(false);
   const [rolled, setRolled] = useState(reduced);
-  const root = useRef<HTMLDivElement>(null);
   const star = starName(film);
   const w = film.witness;
   const d = film.director;
@@ -32,25 +31,7 @@ export default function Credits({ film, onReplay, onTrailer, reduced }: { film: 
   };
 
   return (
-    <div
-      className="credits"
-      ref={root}
-      onPointerMove={(e) => {
-        // The camera drifts with the pointer; every layer sits at a different depth, so they slide against each other.
-        if (reduced || !root.current) return;
-        root.current.style.setProperty("--px", String((e.clientX / innerWidth - 0.5) * 2));
-        root.current.style.setProperty("--py", String((e.clientY / innerHeight - 0.5) * 2));
-      }}
-    >
-      <div className="cr-layer far" aria-hidden>
-        <span className="cr-ghost">Say What You Saw</span>
-        <span className="cr-ghost two">Directed by voice</span>
-      </div>
-      <div className="cr-layer strips" aria-hidden>
-        <i className="cr-strip-film l" />
-        <i className="cr-strip-film r" />
-      </div>
-      <div className="cr-layer dust" aria-hidden />
+    <div className="credits">
       <div className={rolled ? "credits-viewport still" : "credits-viewport"}>
         <div className="credits-roll" onAnimationEnd={() => setRolled(true)}>
           <p className="cr-kicker">A film directed by voice</p>
