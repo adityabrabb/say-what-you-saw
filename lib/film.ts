@@ -4,7 +4,7 @@ import type { RecallRound } from "@/components/RecallGame";
 import type { Credit } from "@/lib/director/catalog";
 import type { Charge } from "@/lib/verdict/schema";
 
-// The film's running order. Progress is saved after every cut so a refresh resumes the same scene.
+// The film's running order. Progress is saved after every cut (name and results survive; a reload always starts at the opening).
 export const SCENES = ["opening", "cast", "act1-card", "act1", "act25", "ad", "act2-card", "act2", "act3", "credits", "trailer"] as const;
 export type SceneId = (typeof SCENES)[number];
 
@@ -42,19 +42,13 @@ export interface FilmState {
 const KEY = "swys-film";
 export const FRESH: FilmState = { scene: "opening", name: "", seen: false, witness: null, director: null, verdict: null };
 
-let resuming: boolean | null = null;
-
-// A refresh resumes the same scene; a new visit (new tab or browser session) starts the film from
-// the top, keeping the star's name and the Select Scene unlock.
+// Every page load, refresh included, starts the film from the opening. The star's name, the Select
+// Scene unlock and the saved results (so Select Scene can jump to later acts) are kept.
 export function loadFilm(): FilmState {
   try {
-    // Decided once per page load (React may mount twice in development).
-    resuming ??= sessionStorage.getItem(KEY) === "1";
-    sessionStorage.setItem(KEY, "1");
     const raw = JSON.parse(localStorage.getItem(KEY) || "null") as Partial<FilmState> | null;
     if (!raw || !SCENES.includes(raw.scene as SceneId)) return FRESH;
-    const saved = { ...FRESH, ...raw };
-    return resuming ? saved : { ...saved, scene: "opening" };
+    return { ...FRESH, ...raw, scene: "opening" };
   } catch {
     return FRESH;
   }

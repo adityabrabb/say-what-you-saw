@@ -40,7 +40,7 @@ The look is film noir: an evidence file, near-black charcoal, aged paper, typewr
 
 ### Scene select
 
-A **Select scene** button in the corner jumps to any scene: the opening, cast, every act, the break and ad, the verdict, the credits and the trailer. Progress is saved, so a **refresh resumes the same scene**, while a new visit starts at the opening (your name is kept). A corner **mute** silences all sound.
+A **Select scene** button in the corner jumps to any scene: the opening, cast, every act, the break and ad, the verdict, the credits and the trailer. Every page load, a refresh included, starts back at the opening (your name is kept). A corner **mute** silences all sound.
 
 ---
 
