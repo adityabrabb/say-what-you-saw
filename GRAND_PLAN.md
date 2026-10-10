@@ -1,6 +1,6 @@
 # Grand Plan: Say What You Saw
 
-> Status: **Phases 1 and 2 DONE (Oct 10, 2026).** Next up: **Phase 3: The Spectacle**.
+> Status: **Phases 1, 2 and 3 DONE (Oct 10, 2026).** Next up: **Phase 4: The Trailer**. Phase 5 (Most Wanted Wall) is deliberately SKIPPED for now (no database provisioned); keep its plan as written.
 > A fresh session should read `CLAUDE.md`, then this file, and continue from the first unchecked phase.
 
 ## The vision
@@ -100,19 +100,19 @@ The twist. It replaces the photo-strip popup after the fourth shot when Director
 ## Phase 3: The Spectacle
 
 **Opening rebuilt in three.js (lazy-loaded, with a CSS fallback)**
-- [ ] A projector beam cuts through the dark, with floating dust particles.
-- [ ] **"Say What You Saw"** assembles out of particles inside the beam.
-- [ ] Then the scene settles into today's title card and "roll camera" direction box.
+- [x] A projector beam cuts through the dark, with floating dust particles.
+- [x] **"Say What You Saw"** assembles out of particles inside the beam.
+- [x] Then the scene settles into today's title card and "roll camera" direction box.
 
 **Transitions and credits**
-- [ ] Act transitions become **film burns and reel changes** (cue marks in the corner), with projector sounds.
-- [ ] Credits roll with **3D parallax layers**.
+- [x] Act transitions become **film burns and reel changes** (cue marks in the corner), with projector sounds.
+- [x] Credits roll with **3D parallax layers**.
 
 **Mid-film fake-out (between Act I and Act II)**
-- [ ] A fake **"Act 2.5: NOT FOUND (404)"** card in a broken, glitching font.
-- [ ] The director, blaming **budget cuts**, cuts to a **15-second commercial break**.
-- [ ] The ad is for **"Memory+ — for people like you"**, with a **Skip** button that only works on the second click.
-- [ ] Then on to Act II.
+- [x] A fake **"Act 2.5: NOT FOUND (404)"** card in a broken, glitching font.
+- [x] The director, blaming **budget cuts**, cuts to a **15-second commercial break**.
+- [x] The ad is for **"Memory+ — for people like you"**, with a **Skip** button that only works on the second click.
+- [x] Then on to Act II.
 
 ## Phase 4: The Trailer (finale)
 
@@ -185,3 +185,12 @@ The twist. It replaces the photo-strip popup after the fourth shot when Director
   - **README rewritten** (the film contract, all acts, Recall, deterministic scoring, Director mode, the director, credits, tech stack, run locally with both env vars, live URL, built by voice with Wispr Flow). `.env.example` updated.
   - **Vercel is git-linked** to the GitHub repo; a push to `main` deploys to production automatically (verified: git-triggered deployments exist, alias `say-what-you-saw-git-main-aahhhh.vercel.app`).
 - **Noir restyle (Oct 10, 2026, requested by Adi):** the whole film, Recall and Director HUD moved from arcade neon to a film-noir evidence file (charcoal, warm grey, aged paper, one blood-red accent, typewriter type, analog sounds). Recall: case-file HUD, Rookie/Detective/Chief folder tabs, CCTV footage frame, Witness Statement form, File Statement stamp, taped evidence photos with inked circles, stamped score. Visual and sound only: scoring, timings, scene JSON and icon names unchanged (verified: no diff in score/pool/scene/schema/icon/engine/generation files; one full timed round measured ready 3.71s, look 3.03s, statement 29.98s with auto-submit; score equals the sum of its categories). Phases 3-6 should be designed in this look, not arcade.
+- **Phase 3 (Oct 10, 2026): The Spectacle, shipped.**
+  - **Opening:** `components/film/BeamTitle.tsx` (three.js, lazy via `next/dynamic`, one shader pass, ~4k points): a projector beam is thrown down the dark frame in <1s, dust floats in it, and "Say What You Saw" assembles left to right out of that dust (sampled from the real title's letters, so it lands exactly on the DOM `h1`), then the real title fades in over it and the kicker + "roll camera" box appear. The beam and dust stay on behind the card. Fallbacks: reduced motion, WebGL failure, or 7s without finishing -> the old CSS title card. Hooked in `Opening.tsx` (`mode: gl|css`, classes `.title-stage.gl.lit`).
+  - **Transitions:** new cut kind `reel` (class `.film-fx.changeover`, NOT `.reel`, which is Recall's loading reel): two cue marks (rings, top-right corner) tick with clicks, a reel-change clunk, then the film burn. Used for opening->cast, Act I->2.5, ad->Act II, Verdict->credits. `filmSfx.cue/reelChange`. Reduced motion falls back to a plain cut.
+  - **Act 2.5 (`components/film/Break.tsx` `NotFound`, scene `act25`):** "Act 2.5 / NOT FOUND / 404" in a glitching typewriter font (chromatic slices, jitter, glitch sound), then the director says "Kidding. Budget cuts. A word from our sponsors." and the title gets struck through. Auto-continues after ~9.5s, with a Skip button.
+  - **Commercial break (`CommercialBreak`, scene `ad`):** 15s "Memory+ ... for people like you" ad on cheap paper (4 slides; slide 3 quotes the Witness score; jingle), progress bar and countdown. **Skip ad only works on the second click**: the first click shakes the button, buzzes, shows "Skipping is a Memory+ feature." and the director says "Skip is a Memory+ feature. Try again. I dare you." Then on to the Act II card. Both new scenes are in Select Scene, TALKATIVE (the director may speak) and RETAKE.
+  - **Credits in 3D:** CSS `perspective` layers at different depths and speeds: a ghost title far back, film strips with sprocket holes beside the roll, dust right in front; the camera tilts with the pointer. Reduced motion: static.
+  - **Recall copy (no logic):** leftover arcade copy rewritten in the witness-statement tone: verdict lines (`VERDICTS` strings in `lib/score.ts`, tiers/thresholds untouched), "Witness Briefing" tutorial, "You get 3 seconds. Once.", "Cross-checking...", "No statement, no sketch.", "Open the file", "Close the case", etc. Scoring, timings, pools and scene JSON untouched.
+  - **Tested** (headless Chrome, production build, software GL): opening (beam, particle assembly, lit title, no console errors), reduced motion (CSS title, no canvas), 390x844 phone (opening, 404, ad, credits), Act 2.5 -> ad auto-advance, director line spoken/shown, ad Skip first click denied / second click goes to Act II card, reel-change cue marks positioned top-right, credits layers, standalone `/recall` renders the new briefing.
+

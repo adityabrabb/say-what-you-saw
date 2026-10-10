@@ -451,7 +451,7 @@ export default function RecallGame({
           <p className="file-label">Case File {caseNo(gameId.current + 1)} · Classified</p>
           <h2>Choose your rank</h2>
           <p className="muted">
-            The footage plays once, then it&apos;s gone. You get {DESCRIBE_SECONDS} seconds to give your statement.
+            The footage plays once. Then {DESCRIBE_SECONDS} seconds to give your statement. No notes.
           </p>
           <div className="difficulties rounds">
             {ROUND_OPTIONS.map((n) => (
@@ -461,13 +461,13 @@ export default function RecallGame({
               </button>
             ))}
           </div>
-          <p className="muted best">Best: {best > 0 ? `${best} / ${rounds * 100}` : "none yet"}</p>
+          <p className="muted best">Best on file: {best > 0 ? `${best} / ${rounds * 100}` : "nothing yet"}</p>
           <div className="row-end centered">
             <button className="ghost" onClick={() => setTutorial(true)}>
-              How to play
+              Briefing
             </button>
             <button className="primary" onClick={startGame}>
-              Start
+              Open the file
             </button>
           </div>
         </div>
@@ -489,11 +489,11 @@ export default function RecallGame({
               exit={{ scale: 0.3, opacity: 0 }}
               transition={{ type: "spring", stiffness: 400, damping: 18 }}
             >
-              {beat > 0 ? beat : "LOOK"}
+              {beat > 0 ? beat : "WATCH"}
             </motion.div>
           </AnimatePresence>
           <p className="muted">
-            Memorize it in {flashSeconds} second{flashSeconds === 1 ? "" : "s"}.
+            You get {flashSeconds} second{flashSeconds === 1 ? "" : "s"}. Once.
           </p>
         </div>
       </>
@@ -511,7 +511,7 @@ export default function RecallGame({
           <Cctv tag="EXHIBIT A">
             <SceneRenderer scene={current.target} time={elapsed} />
           </Cctv>
-          <p className="muted center-text">Memorize it. {remaining.toFixed(1)}s</p>
+          <p className="muted center-text">Remember everything. {remaining.toFixed(1)}s</p>
         </div>
       </>
     );
@@ -549,7 +549,7 @@ export default function RecallGame({
               if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) submit();
             }}
             className="statement"
-            placeholder="I saw… the things, their colours, the place, where everything was, how it moved."
+            placeholder="I saw… what was there, the colours, the place, where it all stood, what moved."
             rows={6}
           />
           <div className="row-end">
@@ -601,9 +601,9 @@ export default function RecallGame({
               ) : (
                 <div className={!said || error ? "stage-placeholder" : "stage-placeholder reviewing"} role={!said || error ? undefined : "status"}>
                   {!said ? (
-                    "Nothing to draw."
+                    "No statement, no sketch."
                   ) : error ? (
-                    "Couldn't build your scene."
+                    "The sketch artist walked out."
                   ) : (
                     <>
                       <span className="reel" aria-hidden />
@@ -636,16 +636,16 @@ export default function RecallGame({
                 <span className="total-number">0</span>
                 <span className="total-of">/ 100</span>
               </div>
-              <p className="verdict">Nothing. Silence. Bold strategy.</p>
+              <p className="verdict">No statement. Silence is not an alibi.</p>
             </div>
           ) : waiting ? (
-            <p className="muted center-text">Scoring…</p>
+            <p className="muted center-text">Cross-checking…</p>
           ) : null}
 
           <p className="label" style={{ marginTop: 16 }}>
             Statement on file
           </p>
-          <blockquote className="said">{said || <em className="muted">…crickets…</em>}</blockquote>
+          <blockquote className="said">{said || <em className="muted">…no comment…</em>}</blockquote>
 
           <div className="row-end">
             {error && (
@@ -655,7 +655,7 @@ export default function RecallGame({
             )}
             {lastRound ? (
               <button className="primary" onClick={finishGame} disabled={waiting}>
-                See final score
+                Close the case
               </button>
             ) : (
               <button className="primary" onClick={startRound} disabled={waiting}>
@@ -680,7 +680,7 @@ export default function RecallGame({
           </span>
           <span className="total-of">/ {max}</span>
         </div>
-        {newBest ? <p className="new-best">New best!</p> : <p className="muted">Best: {best} / {max}</p>}
+        {newBest ? <p className="new-best">New record on file.</p> : <p className="muted">Best on file: {best} / {max}</p>}
         <p className="verdict">{verdictFor(Math.round((runningTotal / max) * 100), runningTotal)}</p>
         <div className="round-list">
           {results.map((r, i) => (
@@ -693,13 +693,13 @@ export default function RecallGame({
         </div>
         <div className="row-end centered end-actions">
           <Link href="/" className="ghost" data-nosfx onClick={() => sfx.back()}>
-            ◄ Home
+            ◄ Leave
           </Link>
           <button className="ghost" onClick={() => setPhase("pick")}>
-            Change settings
+            Change rank
           </button>
           <button className="primary" onClick={startGame}>
-            Play again
+            Reopen the case
           </button>
         </div>
       </div>

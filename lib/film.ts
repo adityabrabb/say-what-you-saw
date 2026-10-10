@@ -5,7 +5,7 @@ import type { Credit } from "@/lib/director/catalog";
 import type { Charge } from "@/lib/verdict/schema";
 
 // The film's running order. Progress is saved after every cut so a refresh resumes the same scene.
-export const SCENES = ["opening", "cast", "act1-card", "act1", "act2-card", "act2", "act3", "credits"] as const;
+export const SCENES = ["opening", "cast", "act1-card", "act1", "act25", "ad", "act2-card", "act2", "act3", "credits"] as const;
 export type SceneId = (typeof SCENES)[number];
 
 export interface WitnessResult {

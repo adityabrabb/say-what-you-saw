@@ -281,12 +281,12 @@ export function scoreScenes(target: Scene, player: Scene): ScoreResult {
 // ---------- Verdicts ----------
 
 const VERDICTS: [number, string[]][] = [
-  [95, ["Photographic memory. Are you a camera?", "Flawless. The scene called, it wants its pixels back.", "Did you screenshot that? Be honest."]],
-  [80, ["Sharp eyes, silver tongue.", "Nearly perfect. Your brain has good RAM.", "Witnesses like you win court cases."]],
-  [60, ["Solid. A little blurry around the edges.", "You saw it. You mostly said it.", "Good effort. Your memory needs a firmware update."]],
-  [40, ["You were there. Spiritually.", "Half right, which is also half wrong.", "Impressionist art. Monet would approve."]],
-  [20, ["Did you blink for the whole thing?", "That's a scene. Just not THE scene.", "Bold reinterpretation of the source material."]],
-  [0, ["Were your eyes even open?", "Absolute fiction. Have you considered writing novels?", "The scene is filing a missing persons report."]],
+  [95, ["Airtight. The defence has no questions.", "Not one detail out of place. Suspicious.", "The court is impressed. The court is also wary."]],
+  [80, ["A reliable witness. Rare. Frame this.", "Nearly perfect. We'll allow it.", "Jurors would believe you. Jurors are fools, but still."]],
+  [60, ["Mostly right. The rest is on you.", "You saw it. You said most of it.", "Good enough for a signature. Not for a medal."]],
+  [40, ["You were there. Spiritually.", "Half right. Half imagined. All noted.", "Your story and the footage have met. They did not get along."]],
+  [20, ["That's a statement. Just not about this scene.", "Creative. The court asked for true.", "Struck from the record. Mostly."]],
+  [0, ["Eyes open? Asking for the file.", "Pure fiction. The file has been burned.", "The footage wants a word with you."]],
 ];
 
 export function verdictFor(score: number, seed: number): string {

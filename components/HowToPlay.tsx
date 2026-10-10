@@ -45,7 +45,7 @@ function SayDemo() {
   return (
     <div className="demo">
       <div className="describe-head">
-        <span className="label" style={{ margin: 0 }}>Hold your Wispr Flow key and talk</span>
+        <span className="label" style={{ margin: 0 }}>Hold the key. Talk.</span>
         <div className="timer small">{secs}</div>
       </div>
       <div className="demo-terminal">
@@ -76,18 +76,18 @@ function ScoreDemo() {
 
 const STEPS = [
   {
-    title: "1 · WATCH",
-    text: "A scene flashes for 5, 3 or 2 seconds depending on difficulty. Memorise everything: what's there, colours, the backdrop, where things sit and how they move.",
+    title: "1 · LOOK",
+    text: "The footage plays for 5, 3 or 2 seconds, depending on your rank. Once. Note what's there, the colours, the place, the movement.",
     demo: <WatchDemo />,
   },
   {
-    title: "2 · SAY IT",
-    text: "The scene vanishes. You get 30 seconds to describe it from memory. Dictate it with Wispr Flow straight into the box. It auto-submits at zero (or press Ctrl+Enter).",
+    title: "2 · TESTIFY",
+    text: "The footage is gone. You have 30 seconds to give your statement. Dictate it with Wispr Flow into the box. It's filed at zero, or press Ctrl+Enter.",
     demo: <SayDemo />,
   },
   {
-    title: "3 · SCORE",
-    text: "Your words are rebuilt into a scene and compared with the original, object by object, across five categories. Missed things get red rings. Beat your best!",
+    title: "3 · THE VERDICT",
+    text: "Your words are rebuilt into a scene and held against the footage, object by object. Misses get circled in red. Don't lie.",
     demo: <ScoreDemo />,
   },
 ];
@@ -103,7 +103,7 @@ export default function HowToPlay({ onClose, onStart }: { onClose: () => void; o
   return (
     <div className="recall-card tutorial" data-nosfx>
       <div className="tutorial-head">
-        <h2>HOW TO PLAY</h2>
+        <h2>Witness Briefing</h2>
         <div className="dots">
           {STEPS.map((_, i) => (
             <button key={i} className={i === step ? "dot-btn active" : "dot-btn"} onClick={() => go(i)} aria-label={`Step ${i + 1}`} />
@@ -137,7 +137,7 @@ export default function HowToPlay({ onClose, onStart }: { onClose: () => void; o
         )}
         {last ? (
           <button className="primary" onClick={() => (sfx.go(), onStart())}>
-            Start game
+            Take the stand
           </button>
         ) : (
           <button className="primary" onClick={() => go(step + 1)}>

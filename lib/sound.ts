@@ -366,6 +366,37 @@ export const filmSfx = {
     tone({ freq: 196, dur: 0.6, type: "triangle", vol: 0.04, at: 0.03 });
   },
   nope: () => tone({ freq: 220, to: 180, dur: 0.16, type: "triangle", vol: 0.05 }),
+  // Reel change: the small "cigarette burn" cue mark ticks in the corner (a click each).
+  cue: () => snap(2100, 0.1, 0, 0.02),
+  // Changeover: gate clunk, the take-up reel spinning down, then the next reel catching.
+  reelChange: () => {
+    noise(0.06, 0.16, 0, 800);
+    tone({ freq: 120, to: 55, dur: 0.14, type: "sine", vol: 0.14 });
+    tone({ freq: 90, to: 40, dur: 0.7, type: "sawtooth", vol: 0.018, at: 0.1 });
+    noise(0.04, 0.1, 0.62, 1500);
+    tone({ freq: 140, to: 70, dur: 0.1, type: "sine", vol: 0.1, at: 0.62 });
+  },
+};
+
+// ---------- Act 2.5 and the commercial break ----------
+export const breakSfx = {
+  // A broken page: stuttering static and a sagging buzz.
+  glitch: () => {
+    noise(0.18, 0.08, 0, 6000);
+    tone({ freq: 150, to: 60, dur: 0.5, type: "sawtooth", vol: 0.035 });
+    noise(0.1, 0.07, 0.3, 4000);
+  },
+  // The sponsor's jingle: a cheerful major chord, slightly detuned, a little too proud of itself.
+  jingle: () => {
+    [392, 494, 587, 784].forEach((f, i) => tone({ freq: f * (i % 2 ? 1.012 : 1), dur: 0.5, type: "triangle", vol: 0.035, at: i * 0.16 }));
+    tone({ freq: 196, dur: 1.2, type: "sine", vol: 0.05, at: 0.5 });
+  },
+  // The skip button refuses: a flat buzz and a muted thunk.
+  deny: () => {
+    tone({ freq: 130, to: 110, dur: 0.22, type: "square", vol: 0.04 });
+    tone({ freq: 90, to: 60, dur: 0.18, type: "sine", vol: 0.1, at: 0.03 });
+  },
+  tick: () => snap(1700, 0.05, 0, 0.012),
 };
 
 // ---------- Act III: The Verdict ----------

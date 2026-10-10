@@ -1481,3 +1481,109 @@ a.dir-chip:hover { color: var(--paper); border-color: var(--paper-dim); }
   .ink-ring { animation: none; stroke-dashoffset: 0; }
   .cctv.live::after, .cctv-rec i { animation: none; }
 }
+
+/* ---------- Phase 3: the spectacle ---------- */
+
+/* Opening: the projector beam builds the title out of dust (three.js). The DOM title is the real one;
+   it is held back until the particles have landed on it. */
+.beam-host { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.beam-canvas { width: 100%; height: 100%; display: block; }
+.title-stage.gl .spot-beam { display: none; }
+.title-stage.gl .film-title { animation: none; opacity: 0; transition: opacity 1.1s ease; text-shadow: none; }
+.title-stage.gl.lit .film-title { opacity: 1; text-shadow: 0 0 22px rgba(232, 223, 204, 0.18), 0 14px 32px rgba(0, 0, 0, 0.6); }
+.title-stage.gl:not(.lit) .film-kicker, .title-stage.gl:not(.lit) .direction-box { animation: none; opacity: 0; }
+.title-stage.gl.lit .film-kicker, .title-stage.gl.lit .direction-box { animation: fade-up 1s ease both; }
+
+/* Act 2.5: a page that is not there. Chromatic split and jitter on the letters, no neon. */
+.nf { background: radial-gradient(ellipse at 50% 30%, #1b1a18 0%, #0c0c0c 70%); }
+.nf-stage { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.nf-kick { color: var(--blood-hot); }
+.nf-title, .nf-code {
+  position: relative; margin: 0; font-family: var(--type); font-weight: 400; color: var(--paper); line-height: 1;
+  animation: nf-jitter 2.4s steps(1) infinite;
+}
+.nf-title { font-size: clamp(34px, 8vw, 96px); letter-spacing: 0.06em; }
+.nf-code { font-size: clamp(60px, 16vw, 190px); color: var(--blood-hot); letter-spacing: 0.1em; }
+.nf-title::before, .nf-title::after, .nf-code::before, .nf-code::after { content: attr(data-text); position: absolute; inset: 0; pointer-events: none; }
+.nf-title::before, .nf-code::before { color: #6fa0a8; mix-blend-mode: screen; opacity: 0.55; transform: translateX(-3px); clip-path: inset(0 0 55% 0); animation: nf-slice 1.3s steps(1) infinite; }
+.nf-title::after, .nf-code::after { color: #b3161c; mix-blend-mode: screen; opacity: 0.6; transform: translateX(3px); clip-path: inset(50% 0 0 0); animation: nf-slice 1.7s steps(1) infinite reverse; }
+@keyframes nf-jitter { 0%, 100% { transform: none; } 11% { transform: translate(2px, -1px) skewX(-3deg); } 13% { transform: none; } 52% { transform: translate(-3px, 1px); } 54% { transform: none; } 81% { transform: translateX(4px) skewX(5deg); } 83% { transform: none; } }
+@keyframes nf-slice { 0% { clip-path: inset(0 0 70% 0); } 20% { clip-path: inset(40% 0 30% 0); } 45% { clip-path: inset(10% 0 60% 0); } 70% { clip-path: inset(65% 0 5% 0); } 100% { clip-path: inset(25% 0 45% 0); } }
+.nf-msg { margin: 8px 0 14px; max-width: 34em; font-family: var(--type); color: #b9ae96; font-size: clamp(14px, 2vw, 18px); }
+.nf.fixed .nf-title, .nf.fixed .nf-code { animation: none; opacity: 0.85; text-decoration: line-through; text-decoration-color: var(--blood-hot); text-decoration-thickness: 4px; }
+.nf.fixed .nf-title::before, .nf.fixed .nf-title::after, .nf.fixed .nf-code::before, .nf.fixed .nf-code::after { display: none; }
+
+/* Commercial break: a cheap local ad, printed on cheap paper */
+.ad { background: #0a0a0a; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 16px; position: relative; }
+.ad-bar { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: rgba(232, 223, 204, 0.12); }
+.ad-bar span { display: block; height: 100%; background: var(--blood-hot); }
+.ad-top { position: absolute; top: 12px; left: 16px; right: 16px; display: flex; justify-content: space-between; font-family: var(--font-ui); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--cream-dim); }
+.ad-card {
+  width: min(620px, 100%); min-height: clamp(150px, 34vh, 260px); display: grid; place-items: center; padding: 22px; text-align: center;
+  background: #e4dac3; color: #1b1712; border-radius: 1px; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.6), inset 0 0 60px rgba(120, 95, 50, 0.25);
+  animation: ad-in 0.5s ease both;
+}
+@keyframes ad-in { from { opacity: 0; transform: translateY(8px) rotate(-0.6deg); } to { opacity: 1; transform: rotate(-0.6deg); } }
+.ad-q { margin: 0; font-family: var(--type); font-size: clamp(20px, 3.4vw, 34px); line-height: 1.3; }
+.ad-q strong { color: var(--blood); }
+.ad-logo { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+.ad-logo span { font-family: var(--font-serif-stack); font-weight: 600; font-size: clamp(48px, 10vw, 96px); letter-spacing: -0.01em; }
+.ad-logo b { font-weight: 700; color: var(--blood); }
+.ad-logo em { margin-top: 14px; font-family: var(--type); font-style: normal; font-size: clamp(14px, 2vw, 20px); }
+.ad-logo.small span { font-size: clamp(36px, 7vw, 64px); }
+.ad-legal { margin: 0; font-family: var(--font-ui); font-size: 10px; letter-spacing: 0.1em; color: var(--cream-dim); text-align: center; max-width: 40em; }
+.ad-skip { position: absolute; right: 16px; bottom: 14px; display: flex; align-items: center; gap: 12px; }
+.ad-denied { font-family: var(--type); font-size: 13px; color: var(--blood-hot); }
+.film-btn.shake { animation: btn-shake 0.4s ease; }
+@keyframes btn-shake { 0%, 100% { transform: none; } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+@media (max-width: 640px) { .ad-skip { flex-direction: column-reverse; align-items: flex-end; gap: 6px; } .ad-legal { margin-bottom: 52px; } }
+@media (prefers-reduced-motion: reduce) {
+  .nf-title, .nf-code, .nf-title::before, .nf-title::after, .nf-code::before, .nf-code::after, .ad-card { animation: none !important; }
+}
+
+/* Reel change: cue marks (the little rings in the top-right corner) tick twice, then the film burns through. */
+.film-fx.changeover { animation: burn-black 1.5s ease 0.95s both; }
+.film-fx.changeover::before {
+  content: ""; position: absolute; inset: -20%;
+  background:
+    radial-gradient(circle at 72% 38%, #fff4d6 0%, #ffb547 9%, #d9531e 20%, rgba(80, 18, 0, 0.9) 34%, transparent 52%),
+    radial-gradient(circle at 24% 70%, rgba(255, 210, 140, 0.9) 0%, rgba(214, 80, 20, 0.7) 14%, transparent 34%);
+  filter: blur(10px); animation: burn-bloom 1.5s ease-in-out 0.95s both;
+}
+.cue { position: absolute; top: 5.5%; right: 4.5%; width: clamp(18px, 2.6vw, 34px); aspect-ratio: 1; border-radius: 50%; border: 3px solid rgba(243, 236, 220, 0.92); background: rgba(243, 236, 220, 0.16); opacity: 0; animation: cue-flash 0.28s steps(1) forwards; }
+.cue.c1 { animation-delay: 0.05s; }
+.cue.c2 { animation-delay: 0.5s; }
+@keyframes cue-flash { 0% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .film-fx.changeover::before { display: none; } }
+
+/* Credits in 3D: a ghost title far back, film strips beside the roll, dust right in front of the lens.
+   Each layer sits at its own depth and drifts at its own speed, and the camera follows the pointer. */
+.credits { perspective: 900px; perspective-origin: calc(50% + var(--px, 0) * 70px) calc(42% + var(--py, 0) * 40px); overflow: hidden; }
+.credits-viewport { transform: rotateY(calc(var(--px, 0) * -2.5deg)) rotateX(calc(var(--py, 0) * 1.5deg)); transform-style: preserve-3d; transition: transform 0.4s ease-out; }
+.cr-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.cr-layer.far { transform: translateZ(-420px) scale(1.7); opacity: 0.1; display: grid; place-content: center; text-align: center; gap: 4vh; }
+.cr-ghost { display: block; font-family: var(--font-serif-stack); font-weight: 600; font-size: clamp(60px, 14vw, 190px); line-height: 1; color: var(--paper); white-space: nowrap; animation: cr-far 60s linear infinite alternate; }
+.cr-ghost.two { font-family: var(--type); font-size: clamp(24px, 5vw, 70px); color: var(--blood-hot); animation-duration: 45s; animation-direction: alternate-reverse; }
+@keyframes cr-far { from { transform: translateY(-5vh); } to { transform: translateY(5vh); } }
+.cr-layer.strips { transform: translateZ(-120px) scale(1.12); }
+.cr-strip-film { position: absolute; top: -200%; bottom: 0; width: clamp(34px, 6vw, 68px); height: 400%; background:
+    radial-gradient(circle at 50% 50%, #000 0 22%, transparent 24%) 0 0 / 100% 48px,
+    #1c1b19;
+  opacity: 0.55; animation: cr-strips 11s linear infinite; }
+.cr-strip-film.l { left: 3%; }
+.cr-strip-film.r { right: 3%; animation-duration: 14s; }
+@keyframes cr-strips { from { transform: translateY(0); } to { transform: translateY(25%); } }
+.cr-layer.dust { z-index: 3; transform: translateZ(300px); opacity: 0.5; background:
+    radial-gradient(circle, rgba(232, 223, 204, 0.5) 0 1.2px, transparent 2px) 0 0 / 190px 230px,
+    radial-gradient(circle, rgba(232, 223, 204, 0.35) 0 1px, transparent 2px) 60px 90px / 260px 170px,
+    radial-gradient(circle, rgba(232, 223, 204, 0.6) 0 2px, transparent 3px) 130px 40px / 410px 330px;
+  animation: cr-dust 9s linear infinite; }
+@keyframes cr-dust { from { background-position: 0 0, 60px 90px, 130px 40px; } to { background-position: -30px 230px, 30px 260px, 90px 370px; } }
+@media (prefers-reduced-motion: reduce) {
+  .credits-viewport { transform: none; transition: none; }
+  .cr-ghost, .cr-strip-film, .cr-layer.dust { animation: none !important; }
+}
+
+.title-stage.gl .floor-pool { opacity: 0; transition: opacity 1.4s ease; }
+.title-stage.gl.lit .floor-pool { opacity: 1; }
+.cr-ghost.two { opacity: 0.45; }

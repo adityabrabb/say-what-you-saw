@@ -1,8 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { isRollCue } from "@/lib/film";
 import { drone, filmSfx, projector } from "@/lib/sound";
+
+// three.js only loads when the title card is reached; if it fails, the CSS title takes over.
+const BeamTitle = dynamic(() => import("./BeamTitle"), { ssr: false });
 
 type Beat = "black" | "flicker" | "leader" | "title";
 const LEADER_MS = 900;
@@ -64,7 +68,7 @@ export default function Opening({ onDone, reduced }: { onDone: () => void; reduc
         {beat === "flicker" && <div className="projector-light" aria-hidden />}
         {beat === "leader" && <Leader n={count} />}
         {beat === "title" && <div className="synth-floor" aria-hidden />}
-        {beat === "title" && <TitleCard onRoll={onDone} />}
+        {beat === "title" && <TitleCard onRoll={onDone} reduced={reduced} />}
       </div>
     </div>
   );
@@ -84,10 +88,22 @@ function Leader({ n }: { n: number }) {
   );
 }
 
-function TitleCard({ onRoll }: { onRoll: () => void }) {
+function TitleCard({ onRoll, reduced }: { onRoll: () => void; reduced: boolean }) {
   const [line, setLine] = useState("");
   const [miss, setMiss] = useState("");
   const [rolling, setRolling] = useState(false);
+  // "gl": the projector beam builds the title out of dust. "css": the plain lit title card.
+  const [mode, setMode] = useState<"gl" | "css">(reduced ? "css" : "gl");
+  const [lit, setLit] = useState(reduced);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const gl = mode === "gl";
+
+  // A slow device or a blocked chunk must never hold the title back.
+  useEffect(() => {
+    if (!gl) return;
+    const t = setTimeout(() => (setMode("css"), setLit(true)), 7000);
+    return () => clearTimeout(t);
+  }, [gl]);
 
   const go = () => {
     if (rolling) return;
@@ -116,13 +132,16 @@ function TitleCard({ onRoll }: { onRoll: () => void }) {
   });
 
   return (
-    <div className="title-stage">
+    <div className={`title-stage${gl ? " gl" : ""}${lit ? " lit" : ""}`}>
+      {gl && <BeamTitle title="Say What You Saw" target={titleRef} onAssembled={() => setLit(true)} onFail={() => (setMode("css"), setLit(true))} />}
       <div className="spot-lamp" aria-hidden />
       <div className="spot-beam" aria-hidden />
       <div className="floor-pool" aria-hidden>
         <span className="floor-shadow">Say What You Saw</span>
       </div>
-      <h1 className="film-title">Say What You Saw</h1>
+      <h1 className="film-title" ref={titleRef}>
+        Say What You Saw
+      </h1>
       <p className="film-kicker">a short film · starring you · directed by your voice</p>
 
       <form className="direction-box" onSubmit={submit}>
