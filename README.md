@@ -4,6 +4,8 @@
 
 **Play it: https://say-what-you-saw.vercel.app**
 
+**Watch the demo: https://www.youtube.com/watch?v=H2Rsgv2QPtY**
+
 > ## 🎙️ Built entirely by voice with Wispr Flow
 >
 > **I never typed a line of this project.** Every prompt, every design change and every bug report was **dictated with [Wispr Flow](https://wisprflow.ai)** straight into Claude Code, and Claude Code wrote all the code. The only physical keys I touched were the Wispr Flow hotkey and Enter. The whole build was screen-recorded with Wispr Flow visible.
