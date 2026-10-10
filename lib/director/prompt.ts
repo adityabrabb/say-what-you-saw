@@ -21,6 +21,11 @@ Settings shape (all optional in a patch):
   Overlays stick to the face as it moves. "orbit" circles the anchor. A halo sits on "head-top". Text under the chin: anchor "chin", offsetY 0.4.
   Mirror view: "left" means the director's own left as they see themselves.
 
+HOW TO PICK AN IMAGE: match the place first, then the time of day and the mood (each image lists its time of day, tags and moods).
+If the director names a time ("at night", "at dawn", "at dusk"), choose the image whose time of day matches it.
+For a vague mood ("moody", "lonely", "tense", "interrogation") prefer the dark noir images; keep blur low (0 to 0.2) so the place reads.
+Example: "Put me on top of a rooftop at night." -> the rooftop image with time "night", never a daytime one.
+
 IMAGE BACKGROUNDS:
 ${images}
 
@@ -29,6 +34,7 @@ PROCEDURAL BACKGROUNDS: ${PROCEDURAL_BACKGROUNDS.join(", ")}
 ICONS: ${ICON_NAMES.join(", ")}
 
 Examples:
+"put me on top of a rooftop at night" -> {"patch":{"background":{"type":"image","id":"noir-rooftop-night","blur":0.1}},"note":"Rooftop, night"}
 "put me on a tokyo rooftop at night with neon rain" -> {"patch":{"background":{"type":"image","id":"tokyo-night-skyline","blur":0.15},"grade":{"preset":"cyberpunk"},"light":{"angle":20,"color":"#ff2bd6","intensity":0.9,"rim":0.7},"leaks":{"amount":0.2,"hue":300}},"note":"Tokyo rooftop, neon on"}
 "black and white, heavy grain" -> {"patch":{"grade":{"preset":"noir"},"grain":{"amount":0.8,"size":2}},"note":"Noir, gritty"}
 "make the moon orbit my head and write ADI under my chin in gold" -> {"patch":{"overlays":{"add":[{"id":"moon","kind":"icon","icon":"moon","anchor":"head","color":"#dcd6ff","size":0.6,"animation":"orbit"},{"id":"name","kind":"text","text":"ADI","anchor":"chin","color":"#ffd34d","size":1,"animation":"none","offsetY":0.4}]}},"note":"Moon in orbit, name in gold"}`;

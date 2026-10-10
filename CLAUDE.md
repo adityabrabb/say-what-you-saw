@@ -78,7 +78,7 @@ lib/
   film.ts              film state (scenes, saved progress, cue matcher, credits card)
   verdict/schema.ts offline.ts prompt.ts poster.ts shatter.ts   Act III: zod schemas, fallback charge, prompt, poster canvas, three.js shatter
 public/icons/neon.svg          184-icon neon sprite (Tabler/Lucide/Game Icons) - regenerate with scripts/build-icons.mjs
-public/backgrounds/*.jpg + backgrounds.json   10 Wikimedia Commons photos (CC/PD, credits in json) + 5 procedural ids
+public/backgrounds/*.jpg + backgrounds.json + credits.md   25 photos (10 earlier CC/PD + 15 moody "noir-*" CC0/public-domain ones, 1920x1080 JPEG, graded darker/less saturated; every title, photographer, license and URL in credits.md and the json) + 5 procedural ids
 ```
 
 ## Director shot settings (lib/director/settings.ts)

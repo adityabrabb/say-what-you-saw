@@ -98,6 +98,10 @@ The twist. In order:
 
 The charge sheet comes from `/api/verdict`, which receives **text only** (your name, what each memory scene really held, what you said, your scores, your director lines). Each exhibit must quote something you actually said, and no two exhibits can be the same line. If the model is down or slow, a funny local charge is built from your own words. Everything is validated with Zod.
 
+### Background photos
+
+Director mode has 25 photo backgrounds: 15 moody, dark, cinematic ones (rainy avenue, foggy alley, neon window, lamplit room, parking garage, harbor at dawn, misty pines, skyline at dusk, subway platform, diner at night, long corridor, desert road at dusk, old theater, rooftop at night, lone lamp in fog) and 10 earlier ones. Each is tagged with mood and time of day in `public/backgrounds/backgrounds.json` so the model can pick the right one ("Put me on top of a rooftop at night."). Every photo's title, photographer, license and source URL is listed in [`public/backgrounds/credits.md`](public/backgrounds/credits.md).
+
 ### The credits
 
 A slow roll over the same dark synthwave floor: **Starring** your name, then Act I (your Witness score, your best Recall score, your best line), the **photo strip** in the middle, Act II (your takes and every line you directed as a numbered scene), Act III (your alias, the crime and the poster), the crew (Wispr Flow, made by Adi, Claude Code), and photo credits for any background photos you used. You can:
@@ -166,7 +170,7 @@ A healthy round goes from "Submit" to a score in about two seconds. Unusual shap
 
 - **Next.js 16** (App Router) + **React 19** + **TypeScript**, deployed on **Vercel**. **Zod 4** validates every model reply.
 - **Scene engine:** scenes are JSON (objects plus a timeline of `move` / `fade` / `grow` / `orbit` with easing), rendered as SVG. **184 neon line icons** (Tabler, Lucide and Game Icons via Iconify) compiled into one sprite, 15 hand-drawn illustrations, 5 backdrops, particles, motion trails and camera moves.
-- **The film:** **Web Audio** for every sound (projector, drone, error dings, glitch, glass, stamp; no audio files), **Speech Synthesis** for the director, **three.js** for the Act III shatter, canvas for the wanted poster, credits card and photo strip, **Motion** and **canvas-confetti** for Recall's feel, Cormorant Garamond, Chakra Petch and Press Start 2P for the type.
+- **The film:** **Web Audio** for every sound (projector, drone, error dings, glitch, glass, stamp; no audio files), **three.js** for the Act III shatter, canvas for the wanted poster, credits card and photo strip, **Motion** and **canvas-confetti** for Recall's feel, Cormorant Garamond, Chakra Petch and Press Start 2P for the type.
 - **Director's Stage:** **MediaPipe Tasks Vision** (segmentation and face landmarks, models loaded from a CDN on that page only), one **WebGL2** shader for every layer, 9 colour grades, 5 procedural backgrounds, 10 photos from **Wikimedia Commons** (CC / public domain, credited on screen).
 - **AI providers:** **OpenRouter** → **Google Gemini** → OpenRouter free models → an offline engine, with a dedicated fast chain for Recall (above). Every route has caching, rate limiting, schema validation, retries and a funny fallback.
 - **Studio** (the original explainer-video creator) is hidden from navigation but still lives at `/studio`.

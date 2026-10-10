@@ -3,89 +3,804 @@
     {
       "id": "tokyo-neon-street",
       "file": "tokyo-neon-street.jpg",
-      "tags": ["tokyo", "japan", "neon", "signs", "street", "city", "shinjuku", "kabukicho", "urban", "nightlife"],
-      "moods": ["electric", "busy", "cyberpunk", "vibrant"],
+      "tags": [
+        "tokyo",
+        "japan",
+        "neon",
+        "signs",
+        "street",
+        "city",
+        "shinjuku",
+        "kabukicho",
+        "urban",
+        "nightlife"
+      ],
+      "moods": [
+        "electric",
+        "busy",
+        "cyberpunk",
+        "vibrant"
+      ],
       "time": "night",
-      "credit": { "title": "Colorful neon street signs in Kabukichō, Shinjuku, Tokyo", "author": "Basile Morin", "license": "CC BY-SA 4.0", "url": "https://commons.wikimedia.org/wiki/File:Colorful_neon_street_signs_in_Kabukich%C5%8D,_Shinjuku,_Tokyo.jpg" }
+      "credit": {
+        "title": "Colorful neon street signs in Kabukichō, Shinjuku, Tokyo",
+        "author": "Basile Morin",
+        "license": "CC BY-SA 4.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Colorful_neon_street_signs_in_Kabukich%C5%8D,_Shinjuku,_Tokyo.jpg"
+      }
     },
     {
       "id": "tokyo-night-skyline",
       "file": "tokyo-night-skyline.jpg",
-      "tags": ["tokyo", "japan", "skyline", "rooftop", "city", "skyscrapers", "lights", "view", "aerial"],
-      "moods": ["epic", "calm", "glamorous", "moody"],
+      "tags": [
+        "tokyo",
+        "japan",
+        "skyline",
+        "rooftop",
+        "city",
+        "skyscrapers",
+        "lights",
+        "view",
+        "aerial"
+      ],
+      "moods": [
+        "epic",
+        "calm",
+        "glamorous",
+        "moody"
+      ],
       "time": "night",
-      "credit": { "title": "Minato City, Tokyo, Japan (Night)", "author": "David Kernan", "license": "CC BY 4.0", "url": "https://commons.wikimedia.org/wiki/File:Minato_City,_Tokyo,_Japan_(Night).jpg" }
+      "credit": {
+        "title": "Minato City, Tokyo, Japan (Night)",
+        "author": "David Kernan",
+        "license": "CC BY 4.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Minato_City,_Tokyo,_Japan_(Night).jpg"
+      }
     },
     {
       "id": "rainy-street-night",
       "file": "rainy-street-night.jpg",
-      "tags": ["rain", "wet", "street", "city", "europe", "lights", "reflections", "winter"],
-      "moods": ["melancholy", "cozy", "romantic", "noir"],
+      "tags": [
+        "rain",
+        "wet",
+        "street",
+        "city",
+        "europe",
+        "lights",
+        "reflections",
+        "winter"
+      ],
+      "moods": [
+        "melancholy",
+        "cozy",
+        "romantic",
+        "noir"
+      ],
       "time": "night",
-      "credit": { "title": "Rainy Vienna street in December, Wollzeile", "author": "Marek Ślusarczyk (Tupungato)", "license": "CC BY 3.0", "url": "https://commons.wikimedia.org/wiki/File:016_Rainy_Vienna_street_in_December_-_Christmas_decorations_of_Wollzeile.jpg" }
+      "credit": {
+        "title": "Rainy Vienna street in December, Wollzeile",
+        "author": "Marek Ślusarczyk (Tupungato)",
+        "license": "CC BY 3.0",
+        "url": "https://commons.wikimedia.org/wiki/File:016_Rainy_Vienna_street_in_December_-_Christmas_decorations_of_Wollzeile.jpg"
+      }
     },
     {
       "id": "golden-hour-beach",
       "file": "golden-hour-beach.jpg",
-      "tags": ["beach", "sand", "river", "boat", "golden hour", "sunset", "warm", "tropical", "water"],
-      "moods": ["warm", "peaceful", "nostalgic", "dreamy"],
+      "tags": [
+        "beach",
+        "sand",
+        "river",
+        "boat",
+        "golden hour",
+        "sunset",
+        "warm",
+        "tropical",
+        "water"
+      ],
+      "moods": [
+        "warm",
+        "peaceful",
+        "nostalgic",
+        "dreamy"
+      ],
       "time": "golden hour",
-      "credit": { "title": "Careening of a pirogue on a sand beach, at golden hour, Si Phan Don, Laos", "author": "Basile Morin", "license": "CC BY-SA 4.0", "url": "https://commons.wikimedia.org/wiki/File:Careening_of_a_pirogue_on_a_sand_beach,_at_golden_hour,_in_Si_Phan_Don,_Laos.jpg" }
+      "credit": {
+        "title": "Careening of a pirogue on a sand beach, at golden hour, Si Phan Don, Laos",
+        "author": "Basile Morin",
+        "license": "CC BY-SA 4.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Careening_of_a_pirogue_on_a_sand_beach,_at_golden_hour,_in_Si_Phan_Don,_Laos.jpg"
+      }
     },
     {
       "id": "mountain-lake",
       "file": "mountain-lake.jpg",
-      "tags": ["mountains", "snow", "lake", "himalaya", "nepal", "nature", "outdoors", "adventure", "peak"],
-      "moods": ["epic", "fresh", "serene", "heroic"],
+      "tags": [
+        "mountains",
+        "snow",
+        "lake",
+        "himalaya",
+        "nepal",
+        "nature",
+        "outdoors",
+        "adventure",
+        "peak"
+      ],
+      "moods": [
+        "epic",
+        "fresh",
+        "serene",
+        "heroic"
+      ],
       "time": "day",
-      "credit": { "title": "Mountains in snow, Mountain lake, Chola Valley, Nepal", "author": "Vyacheslav Argenberg", "license": "CC BY 4.0", "url": "https://commons.wikimedia.org/wiki/File:Mountains_in_snow,_Mountain_lake,_Chola_Valley,_Nepal,_Himalayas.jpg" }
+      "credit": {
+        "title": "Mountains in snow, Mountain lake, Chola Valley, Nepal",
+        "author": "Vyacheslav Argenberg",
+        "license": "CC BY 4.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Mountains_in_snow,_Mountain_lake,_Chola_Valley,_Nepal,_Himalayas.jpg"
+      }
     },
     {
       "id": "misty-forest",
       "file": "misty-forest.jpg",
-      "tags": ["forest", "trees", "fog", "mist", "river", "nature", "autumn", "woods"],
-      "moods": ["mysterious", "quiet", "eerie", "calm"],
+      "tags": [
+        "forest",
+        "trees",
+        "fog",
+        "mist",
+        "river",
+        "nature",
+        "autumn",
+        "woods"
+      ],
+      "moods": [
+        "mysterious",
+        "quiet",
+        "eerie",
+        "calm"
+      ],
       "time": "morning",
-      "credit": { "title": "Morning fog at some trees by Keravanjoki river in Vantaa, Finland", "author": "Ximonic (Simo Räsänen)", "license": "CC BY 3.0", "url": "https://commons.wikimedia.org/wiki/File:Morning_fog_at_some_trees_by_Keravanjoki_river_in_Vantaa,_Finland,_2021_October.jpg" }
+      "credit": {
+        "title": "Morning fog at some trees by Keravanjoki river in Vantaa, Finland",
+        "author": "Ximonic (Simo Räsänen)",
+        "license": "CC BY 3.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Morning_fog_at_some_trees_by_Keravanjoki_river_in_Vantaa,_Finland,_2021_October.jpg"
+      }
     },
     {
       "id": "desert-dunes",
       "file": "desert-dunes.jpg",
-      "tags": ["desert", "dunes", "sand", "death valley", "dry", "hot", "landscape"],
-      "moods": ["vast", "lonely", "warm", "minimal"],
+      "tags": [
+        "desert",
+        "dunes",
+        "sand",
+        "death valley",
+        "dry",
+        "hot",
+        "landscape"
+      ],
+      "moods": [
+        "vast",
+        "lonely",
+        "warm",
+        "minimal"
+      ],
       "time": "day",
-      "credit": { "title": "Mesquite Sand Dunes in Death Valley", "author": "Brocken Inaglory", "license": "CC BY-SA 3.0", "url": "https://commons.wikimedia.org/wiki/File:Mesquite_Sand_Dunes_in_Death_Valley.jpg" }
+      "credit": {
+        "title": "Mesquite Sand Dunes in Death Valley",
+        "author": "Brocken Inaglory",
+        "license": "CC BY-SA 3.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Mesquite_Sand_Dunes_in_Death_Valley.jpg"
+      }
     },
     {
       "id": "library",
       "file": "library.jpg",
-      "tags": ["library", "books", "bookshelves", "indoors", "study", "office", "academic"],
-      "moods": ["smart", "cozy", "serious", "calm"],
+      "tags": [
+        "library",
+        "books",
+        "bookshelves",
+        "indoors",
+        "study",
+        "office",
+        "academic"
+      ],
+      "moods": [
+        "smart",
+        "cozy",
+        "serious",
+        "calm"
+      ],
       "time": "day",
-      "credit": { "title": "Bookshelves and interior of the library of the Academy for Judiciary", "author": "Szeronine", "license": "CC BY 4.0", "url": "https://commons.wikimedia.org/wiki/File:Bookshelves_and_interior_of_the_library_of_the_Academy_for_Judiciary.jpg" }
+      "credit": {
+        "title": "Bookshelves and interior of the library of the Academy for Judiciary",
+        "author": "Szeronine",
+        "license": "CC BY 4.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Bookshelves_and_interior_of_the_library_of_the_Academy_for_Judiciary.jpg"
+      }
     },
     {
       "id": "northern-lights",
       "file": "northern-lights.jpg",
-      "tags": ["aurora", "northern lights", "sky", "stars", "alaska", "arctic", "green", "night sky"],
-      "moods": ["magical", "awe", "dreamy", "cold"],
+      "tags": [
+        "aurora",
+        "northern lights",
+        "sky",
+        "stars",
+        "alaska",
+        "arctic",
+        "green",
+        "night sky"
+      ],
+      "moods": [
+        "magical",
+        "awe",
+        "dreamy",
+        "cold"
+      ],
       "time": "night",
-      "credit": { "title": "Aurora borealis over Eielson Air Force Base, Alaska", "author": "U.S. Air Force, Senior Airman Joshua Strang", "license": "Public domain", "url": "https://commons.wikimedia.org/wiki/File:Aurora_borealis_over_Eielson_Air_Force_Base,_Alaska.jpg" }
+      "credit": {
+        "title": "Aurora borealis over Eielson Air Force Base, Alaska",
+        "author": "U.S. Air Force, Senior Airman Joshua Strang",
+        "license": "Public domain",
+        "url": "https://commons.wikimedia.org/wiki/File:Aurora_borealis_over_Eielson_Air_Force_Base,_Alaska.jpg"
+      }
     },
     {
       "id": "paris-rain-painting",
       "file": "paris-rain-painting.jpg",
-      "tags": ["paris", "france", "painting", "umbrellas", "rain", "street", "art", "impressionism", "vintage", "classic"],
-      "moods": ["artistic", "elegant", "nostalgic", "romantic"],
+      "tags": [
+        "paris",
+        "france",
+        "painting",
+        "umbrellas",
+        "rain",
+        "street",
+        "art",
+        "impressionism",
+        "vintage",
+        "classic"
+      ],
+      "moods": [
+        "artistic",
+        "elegant",
+        "nostalgic",
+        "romantic"
+      ],
       "time": "day",
-      "credit": { "title": "Paris Street; Rainy Day (1877)", "author": "Gustave Caillebotte", "license": "Public domain", "url": "https://commons.wikimedia.org/wiki/File:Gustave_Caillebotte_-_Paris_Street;_Rainy_Day_-_Google_Art_Project.jpg" }
+      "credit": {
+        "title": "Paris Street; Rainy Day (1877)",
+        "author": "Gustave Caillebotte",
+        "license": "Public domain",
+        "url": "https://commons.wikimedia.org/wiki/File:Gustave_Caillebotte_-_Paris_Street;_Rainy_Day_-_Google_Art_Project.jpg"
+      }
+    },
+    {
+      "id": "noir-rainy-avenue",
+      "file": "noir-rainy-avenue.jpg",
+      "tags": [
+        "rain",
+        "rainy",
+        "wet street",
+        "wet road",
+        "street",
+        "city",
+        "avenue",
+        "streetlights",
+        "street lamps",
+        "slick",
+        "night",
+        "urban",
+        "reflections"
+      ],
+      "moods": [
+        "noir",
+        "melancholy",
+        "moody",
+        "lonely"
+      ],
+      "time": "night",
+      "credit": {
+        "title": "שדרות בני ברית בגשם בערב, ינואר 2024",
+        "author": "מקף־עברי",
+        "license": "CC0 1.0",
+        "url": "https://commons.wikimedia.org/wiki/File:%D7%A9%D7%93%D7%A8%D7%95%D7%AA_%D7%91%D7%A0%D7%99_%D7%91%D7%A8%D7%99%D7%AA_%D7%91%D7%92%D7%A9%D7%9D_%D7%91%D7%A2%D7%A8%D7%91,_%D7%99%D7%A0%D7%95%D7%90%D7%A8_2024.jpg"
+      }
+    },
+    {
+      "id": "noir-foggy-alley",
+      "file": "noir-foggy-alley.jpg",
+      "tags": [
+        "alley",
+        "back alley",
+        "dark alley",
+        "empty alley",
+        "fog",
+        "foggy",
+        "backstreet",
+        "narrow",
+        "urban",
+        "power lines"
+      ],
+      "moods": [
+        "noir",
+        "eerie",
+        "tense",
+        "lonely"
+      ],
+      "time": "dawn",
+      "credit": {
+        "title": "Quiet Back Alley",
+        "author": "Cole Patrick",
+        "license": "CC0 1.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Quiet_Back_Alley_(Unsplash).jpg"
+      }
+    },
+    {
+      "id": "noir-neon-window",
+      "file": "noir-neon-window.jpg",
+      "tags": [
+        "neon",
+        "neon sign",
+        "neon lights",
+        "interrogation",
+        "pink",
+        "purple",
+        "storefront",
+        "shop window",
+        "night street",
+        "magenta"
+      ],
+      "moods": [
+        "noir",
+        "moody",
+        "tense",
+        "electric"
+      ],
+      "time": "night",
+      "credit": {
+        "title": "Night lights in Loyola, California",
+        "author": "Romain Guy from San Francisco, USA",
+        "license": "CC0 1.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Night_lights_in_Loyola,_California.jpg"
+      }
+    },
+    {
+      "id": "noir-lamplit-room",
+      "file": "noir-lamplit-room.jpg",
+      "tags": [
+        "bare room",
+        "empty room",
+        "room",
+        "lamp",
+        "one lamp",
+        "single light",
+        "window",
+        "desk",
+        "indoors",
+        "office",
+        "study",
+        "interior"
+      ],
+      "moods": [
+        "quiet",
+        "lonely",
+        "moody",
+        "cold"
+      ],
+      "time": "evening",
+      "credit": {
+        "title": "Table in workroom",
+        "author": "Markus Spiske",
+        "license": "CC0 1.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Table_in_workroom_(Unsplash).jpg"
+      }
+    },
+    {
+      "id": "noir-parking-garage",
+      "file": "noir-parking-garage.jpg",
+      "tags": [
+        "parking garage",
+        "parking",
+        "garage",
+        "car park",
+        "underground",
+        "concrete",
+        "basement",
+        "fluorescent",
+        "pillars"
+      ],
+      "moods": [
+        "noir",
+        "tense",
+        "cold",
+        "eerie"
+      ],
+      "time": "night",
+      "credit": {
+        "title": "Dark industrial parking lot",
+        "author": "Carl Newton",
+        "license": "CC0 1.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Dark_industrial_parking_lot_(Unsplash).jpg"
+      }
+    },
+    {
+      "id": "noir-harbor-dawn",
+      "file": "noir-harbor-dawn.jpg",
+      "tags": [
+        "harbor",
+        "harbour",
+        "dawn",
+        "sunrise",
+        "bridge",
+        "water",
+        "waterfront",
+        "sydney",
+        "port",
+        "morning",
+        "docks"
+      ],
+      "moods": [
+        "calm",
+        "hopeful",
+        "quiet",
+        "golden"
+      ],
+      "time": "dawn",
+      "credit": {
+        "title": "Sydney harbour bridge dawn",
+        "author": "actuarial disco boy",
+        "license": "Public domain",
+        "url": "https://commons.wikimedia.org/wiki/File:Sydney_harbour_bridge_dawn.jpg"
+      }
+    },
+    {
+      "id": "noir-misty-pines",
+      "file": "noir-misty-pines.jpg",
+      "tags": [
+        "forest",
+        "foggy forest",
+        "fog",
+        "mist",
+        "pine",
+        "pines",
+        "trees",
+        "woods",
+        "mountain",
+        "hillside",
+        "clouds"
+      ],
+      "moods": [
+        "mysterious",
+        "eerie",
+        "cold",
+        "moody"
+      ],
+      "time": "dawn",
+      "credit": {
+        "title": "Foggy woodlands",
+        "author": "Roksolana Zasiadko",
+        "license": "CC0 1.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Foggy_woodlands_(Unsplash).jpg"
+      }
+    },
+    {
+      "id": "noir-skyline-dusk",
+      "file": "noir-skyline-dusk.jpg",
+      "tags": [
+        "skyline",
+        "rooftop",
+        "roof",
+        "city skyline",
+        "dusk",
+        "twilight",
+        "new york",
+        "skyscrapers",
+        "city lights",
+        "view",
+        "sunset"
+      ],
+      "moods": [
+        "epic",
+        "moody",
+        "cinematic",
+        "lonely"
+      ],
+      "time": "dusk",
+      "credit": {
+        "title": "A View To Behold (187948957)",
+        "author": "Sushant Sakhalkar",
+        "license": "CC0 1.0",
+        "url": "https://commons.wikimedia.org/wiki/File:A_View_To_Behold_(187948957).jpeg"
+      }
+    },
+    {
+      "id": "noir-subway-platform",
+      "file": "noir-subway-platform.jpg",
+      "tags": [
+        "subway",
+        "metro",
+        "train station",
+        "platform",
+        "underground",
+        "station",
+        "tunnel",
+        "transit",
+        "concrete"
+      ],
+      "moods": [
+        "noir",
+        "cold",
+        "empty",
+        "lonely"
+      ],
+      "time": "night",
+      "credit": {
+        "title": "BART platform at Embarcadero station, April 2016",
+        "author": "Kace Rodriguez kace",
+        "license": "CC0 1.0",
+        "url": "https://commons.wikimedia.org/wiki/File:BART_platform_at_Embarcadero_station,_April_2016.jpg"
+      }
+    },
+    {
+      "id": "noir-diner-night",
+      "file": "noir-diner-night.jpg",
+      "tags": [
+        "diner at night",
+        "night diner",
+        "diner",
+        "restaurant",
+        "cafe",
+        "coffee shop",
+        "chrome",
+        "street corner",
+        "late night",
+        "new york",
+        "storefront"
+      ],
+      "moods": [
+        "noir",
+        "warm",
+        "lonely",
+        "cinematic"
+      ],
+      "time": "night",
+      "credit": {
+        "title": "Empire Diner at night",
+        "author": "Cat Lee Ball",
+        "license": "CC0 1.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Empire_Diner_at_night.jpg"
+      }
+    },
+    {
+      "id": "noir-long-corridor",
+      "file": "noir-long-corridor.jpg",
+      "tags": [
+        "corridor",
+        "long corridor",
+        "hallway",
+        "tunnel",
+        "walkway",
+        "passage",
+        "hall",
+        "symmetry",
+        "bridge"
+      ],
+      "moods": [
+        "noir",
+        "tense",
+        "cinematic",
+        "cold"
+      ],
+      "time": "night",
+      "credit": {
+        "title": "MontyLov 2017-02-12",
+        "author": "MontyLov",
+        "license": "CC0 1.0",
+        "url": "https://commons.wikimedia.org/wiki/File:MontyLov_2017-02-12_(Unsplash_Q96YBb998E).jpg"
+      }
+    },
+    {
+      "id": "noir-desert-dusk-road",
+      "file": "noir-desert-dusk-road.jpg",
+      "tags": [
+        "desert highway",
+        "desert",
+        "highway",
+        "road",
+        "monument valley",
+        "dusk road",
+        "badlands",
+        "roadtrip",
+        "road trip",
+        "buttes",
+        "canyon"
+      ],
+      "moods": [
+        "lonely",
+        "vast",
+        "moody",
+        "cinematic"
+      ],
+      "time": "dusk",
+      "credit": {
+        "title": "Night Desert Drives",
+        "author": "Fré Sonneveld",
+        "license": "CC0 1.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Night_Desert_Drives_(Unsplash).jpg"
+      }
+    },
+    {
+      "id": "noir-old-theater",
+      "file": "noir-old-theater.jpg",
+      "tags": [
+        "theater",
+        "theatre",
+        "old theater",
+        "opera house",
+        "stage",
+        "curtain",
+        "auditorium",
+        "balcony",
+        "playhouse",
+        "cinema"
+      ],
+      "moods": [
+        "dramatic",
+        "grand",
+        "elegant",
+        "cinematic"
+      ],
+      "time": "evening",
+      "credit": {
+        "title": "Theatro Municipal de São Paulo (Interior)",
+        "author": "Wilfredor",
+        "license": "CC0 1.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Theatro_Municipal_de_S%C3%A3o_Paulo_(Interior).jpg"
+      }
+    },
+    {
+      "id": "noir-rooftop-night",
+      "file": "noir-rooftop-night.jpg",
+      "tags": [
+        "rooftop",
+        "roof",
+        "rooftop at night",
+        "on top of a rooftop",
+        "city lights",
+        "night city",
+        "old town",
+        "stockholm",
+        "city view",
+        "terrace"
+      ],
+      "moods": [
+        "moody",
+        "lonely",
+        "cinematic",
+        "quiet"
+      ],
+      "time": "night",
+      "credit": {
+        "title": "View of Södermalm in Stockholm from a rooftop",
+        "author": "Signe Krantz (Wikimedia Sverige)",
+        "license": "CC0 1.0",
+        "url": "https://commons.wikimedia.org/wiki/File:View_of_S%C3%B6dermalm_in_Stockholm_from_a_rooftop.jpg"
+      }
+    },
+    {
+      "id": "noir-lamp-in-fog",
+      "file": "noir-lamp-in-fog.jpg",
+      "tags": [
+        "street light",
+        "street lights",
+        "streetlight",
+        "lamp post",
+        "mist",
+        "fog",
+        "foggy night",
+        "misty",
+        "light trails",
+        "lone light",
+        "road"
+      ],
+      "moods": [
+        "eerie",
+        "lonely",
+        "moody",
+        "noir"
+      ],
+      "time": "night",
+      "credit": {
+        "title": "Trees around Brastad soccer arena in fog (13)",
+        "author": "W.carter",
+        "license": "CC0 1.0",
+        "url": "https://commons.wikimedia.org/wiki/File:Trees_around_Brastad_soccer_arena_in_fog_(13).jpg"
+      }
     }
   ],
   "procedural": [
-    { "id": "neon-rain-city", "tags": ["city", "neon", "rain", "night", "cyberpunk", "tokyo", "rooftop"], "moods": ["electric", "moody"], "time": "night" },
-    { "id": "star-field", "tags": ["space", "stars", "galaxy", "cosmos", "universe", "night sky"], "moods": ["vast", "dreamy"], "time": "night" },
-    { "id": "sunset-gradient", "tags": ["sunset", "sunrise", "golden hour", "sky", "warm", "dusk"], "moods": ["warm", "nostalgic"], "time": "golden hour" },
-    { "id": "studio-backdrop", "tags": ["studio", "portrait", "backdrop", "seamless", "plain", "clean", "professional"], "moods": ["clean", "minimal"], "time": "any" },
-    { "id": "foggy-forest", "tags": ["forest", "fog", "trees", "woods", "mist", "nature"], "moods": ["mysterious", "eerie"], "time": "morning" }
+    {
+      "id": "neon-rain-city",
+      "tags": [
+        "city",
+        "neon",
+        "rain",
+        "night",
+        "cyberpunk",
+        "tokyo",
+        "rooftop"
+      ],
+      "moods": [
+        "electric",
+        "moody"
+      ],
+      "time": "night"
+    },
+    {
+      "id": "star-field",
+      "tags": [
+        "space",
+        "stars",
+        "galaxy",
+        "cosmos",
+        "universe",
+        "night sky"
+      ],
+      "moods": [
+        "vast",
+        "dreamy"
+      ],
+      "time": "night"
+    },
+    {
+      "id": "sunset-gradient",
+      "tags": [
+        "sunset",
+        "sunrise",
+        "golden hour",
+        "sky",
+        "warm",
+        "dusk"
+      ],
+      "moods": [
+        "warm",
+        "nostalgic"
+      ],
+      "time": "golden hour"
+    },
+    {
+      "id": "studio-backdrop",
+      "tags": [
+        "studio",
+        "portrait",
+        "backdrop",
+        "seamless",
+        "plain",
+        "clean",
+        "professional"
+      ],
+      "moods": [
+        "clean",
+        "minimal"
+      ],
+      "time": "any"
+    },
+    {
+      "id": "foggy-forest",
+      "tags": [
+        "forest",
+        "fog",
+        "trees",
+        "woods",
+        "mist",
+        "nature"
+      ],
+      "moods": [
+        "mysterious",
+        "eerie"
+      ],
+      "time": "morning"
+    }
   ]
 }

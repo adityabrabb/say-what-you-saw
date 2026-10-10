@@ -16,7 +16,7 @@ const HINTS = [
   "Put me on a Tokyo rooftop at night with neon rain",
   "Golden hour, warm light from the left",
   "Black and white noir, hard light from above",
-  "Make the moon orbit my head",
+  "Put me on top of a rooftop at night",
   "Write ADI under my chin in gold",
 ];
 const SHOT = /^(freeze|take (the |a )?(shot|picture|photo|pic)|click|snap|capture|shoot|say cheese|cheese)\b/;
