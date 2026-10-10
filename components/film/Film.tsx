@@ -146,7 +146,7 @@ export default function Film() {
     [reduced, update]
   );
 
-  const openingDone = useCallback(() => go("cast", "reel", { seen: true }), [go]);
+  const openingDone = useCallback(() => go("cast", "burn", { seen: true }), [go]);
   const castDone = useCallback((name: string) => go("act1-card", "cut", { name }), [go]);
   const act1Done = useCallback(() => go("act1", "cut"), [go]);
   const act2Done = useCallback(() => go("act2", "cut"), [go]);
@@ -223,15 +223,6 @@ export default function Film() {
 
       {chrome && (
         <div className="film-chrome">
-          <button
-            className="film-chip"
-            onClick={() => host.setVoiceMuted(!host.voiceMuted)}
-            aria-pressed={!host.voiceMuted}
-            aria-label={host.voiceMuted ? "Turn the director's voice on" : "Turn the director's voice off"}
-            title="The director's voice"
-          >
-            Director {host.voiceMuted ? "off" : "on"}
-          </button>
           <button className="film-chip" onClick={() => setMuted(!muted)} aria-label={muted ? "Unmute" : "Mute"} title={muted ? "Sound off" : "Sound on"}>
             {muted ? "♪̸" : "♪"}
           </button>

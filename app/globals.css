@@ -1491,8 +1491,8 @@ a.dir-chip:hover { color: var(--paper); border-color: var(--paper-dim); }
 .title-stage.gl .spot-beam { display: none; }
 .title-stage.gl .film-title { animation: none; opacity: 0; transition: opacity 1.1s ease; text-shadow: none; }
 .title-stage.gl.lit .film-title { opacity: 1; text-shadow: 0 0 22px rgba(232, 223, 204, 0.18), 0 14px 32px rgba(0, 0, 0, 0.6); }
-.title-stage.gl:not(.lit) .film-kicker, .title-stage.gl:not(.lit) .direction-box { animation: none; opacity: 0; }
-.title-stage.gl.lit .film-kicker, .title-stage.gl.lit .direction-box { animation: fade-up 1s ease both; }
+.title-stage.gl:not(.boxed) .film-kicker, .title-stage.gl:not(.boxed) .direction-box { animation: none; opacity: 0; }
+.title-stage.gl.boxed .film-kicker, .title-stage.gl.boxed .direction-box { animation: fade-up 1s ease both; }
 
 /* Act 2.5: a page that is not there. Chromatic split and jitter on the letters, no neon. */
 .nf { background: radial-gradient(ellipse at 50% 30%, #1b1a18 0%, #0c0c0c 70%); }
@@ -1598,3 +1598,10 @@ a.dir-chip:hover { color: var(--paper); border-color: var(--paper-dim); }
 .trailer-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .film-btn.quiet { opacity: 0.7; }
 @media (max-width: 640px) { .trailer { padding-top: 64px; } .trailer-actions .film-btn { flex: 1 1 45%; font-size: 11px; } }
+
+/* Purely decorative layers never take a click */
+.beam-host, .beam-canvas, .film-fx, .film-fx *, .cr-layer, .spot-lamp, .spot-beam, .floor-pool, .synth-floor, .projector-light, .leader-sweep, .trailer-stage .trailer-note { pointer-events: none; }
+
+/* The score/verdict stamps slam in from 2.2x scale; on a phone that briefly made the page wider than the
+   screen, so the browser zoomed out and taps landed on the wrong spot. Clip sideways overflow inside the card. */
+.recall-card { overflow-x: clip; }

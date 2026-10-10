@@ -75,7 +75,7 @@ function TrailerPlayer({ film, reduced, onBack }: { film: FilmState; reduced: bo
         film.director?.strip ? loadImage(film.director.strip) : null,
         film.director?.freeze && !film.director.demo ? loadImage(film.director.freeze) : null,
         film.verdict?.poster ? loadImage(film.verdict.poster) : null,
-        document.fonts?.ready,
+        Promise.race([document.fonts?.ready, new Promise((r) => setTimeout(r, 3000))]), // never wait on fonts forever
       ]);
       if (!alive.current) return;
       const rounds = (film.witness?.rounds ?? []).map((r) => ({ title: r.title, truth: r.truth, said: r.said, score: r.score }));

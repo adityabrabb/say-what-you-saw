@@ -63,14 +63,15 @@ void main() {
 interface Props {
   title: string;
   target: React.RefObject<HTMLElement | null>; // the real title: the particles land exactly on its letters
+  onBox?: () => void; // the direction box can appear while the last particles are still landing
   onAssembled: () => void;
   onFail: () => void;
 }
 
-export default function BeamTitle({ title, target, onAssembled, onFail }: Props) {
+export default function BeamTitle({ title, target, onBox, onAssembled, onFail }: Props) {
   const host = useRef<HTMLDivElement>(null);
-  const cb = useRef({ onAssembled, onFail });
-  cb.current = { onAssembled, onFail };
+  const cb = useRef({ onAssembled, onFail, onBox });
+  cb.current = { onAssembled, onFail, onBox };
 
   useEffect(() => {
     const el = host.current;
@@ -84,7 +85,7 @@ export default function BeamTitle({ title, target, onAssembled, onFail }: Props)
 
     const run = async () => {
       try {
-        await document.fonts?.ready;
+        await Promise.race([document.fonts?.ready, new Promise((r) => setTimeout(r, 2500))]);
         if (disposed) return;
         const stage = el.getBoundingClientRect();
         const W = Math.max(320, Math.round(stage.width));
@@ -189,11 +190,16 @@ export default function BeamTitle({ title, target, onAssembled, onFail }: Props)
 
         const t0 = performance.now();
         let told = false;
+        let boxed = false;
         const frame = (now: number) => {
           const t = (now - t0) / 1000;
           shared.uTime.value = t;
           shared.uReach.value = Math.min(1.25, t / 0.9); // the beam is thrown down the frame in under a second
           quadMat.uniforms.uFlick.value = 0.93 + 0.07 * Math.sin(t * 151) * Math.sin(t * 37);
+          if (t > 2.4 && !boxed) {
+            boxed = true;
+            cb.current.onBox?.();
+          }
           if (t > 3.9) {
             if (!told) {
               told = true;

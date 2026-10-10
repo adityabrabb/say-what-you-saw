@@ -95,6 +95,7 @@ function TitleCard({ onRoll, reduced }: { onRoll: () => void; reduced: boolean }
   // "gl": the projector beam builds the title out of dust. "css": the plain lit title card.
   const [mode, setMode] = useState<"gl" | "css">(reduced ? "css" : "gl");
   const [lit, setLit] = useState(reduced);
+  const [boxed, setBoxed] = useState(reduced);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const gl = mode === "gl";
 
@@ -110,7 +111,7 @@ function TitleCard({ onRoll, reduced }: { onRoll: () => void; reduced: boolean }
     setRolling(true);
     filmSfx.accept();
     projector.stop(1.6);
-    setTimeout(onRoll, 500);
+    setTimeout(onRoll, 350);
   };
 
   const submit = (e: React.FormEvent) => {
@@ -132,8 +133,8 @@ function TitleCard({ onRoll, reduced }: { onRoll: () => void; reduced: boolean }
   });
 
   return (
-    <div className={`title-stage${gl ? " gl" : ""}${lit ? " lit" : ""}`}>
-      {gl && <BeamTitle title="Say What You Saw" target={titleRef} onAssembled={() => setLit(true)} onFail={() => (setMode("css"), setLit(true))} />}
+    <div className={`title-stage${gl ? " gl" : ""}${lit ? " lit" : ""}${boxed || lit ? " boxed" : ""}`}>
+      {gl && <BeamTitle title="Say What You Saw" target={titleRef} onBox={() => setBoxed(true)} onAssembled={() => setLit(true)} onFail={() => (setMode("css"), setLit(true))} />}
       <div className="spot-lamp" aria-hidden />
       <div className="spot-beam" aria-hidden />
       <div className="floor-pool" aria-hidden>
@@ -162,7 +163,7 @@ function TitleCard({ onRoll, reduced }: { onRoll: () => void; reduced: boolean }
             autoFocus
           />
           <button type="button" className="film-btn" onClick={go} disabled={rolling}>
-            Roll camera ▸
+            {rolling ? "Rolling…" : "Roll camera ▸"}
           </button>
         </div>
         <p className="direction-hint" aria-live="polite">

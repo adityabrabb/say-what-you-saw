@@ -11,7 +11,6 @@ import { useFourthWall } from "./useFourthWall";
 
 function Line({ line, reduced, scene }: { line: HostLine; reduced: boolean; scene: SceneId }) {
   const [typed, setTyped] = useState(reduced ? line.text.length : 0);
-  const speaking = host.speaking;
   const done = typed >= line.text.length;
 
   useEffect(() => {
@@ -20,12 +19,12 @@ function Line({ line, reduced, scene }: { line: HostLine; reduced: boolean; scen
     return () => clearTimeout(t);
   }, [typed, done, line.kind]);
 
-  // Read, spoken, then held a moment before the next line.
+  // Read, then held a moment (longer for longer lines) before the next one. Text only: the director has no voice.
   useEffect(() => {
-    if (!done || speaking) return;
-    const t = setTimeout(() => host.next(line.id), 1700);
+    if (!done) return;
+    const t = setTimeout(() => host.next(line.id), 1700 + line.text.length * 30);
     return () => clearTimeout(t);
-  }, [done, speaking, line.id]);
+  }, [done, line.id, line.text.length]);
 
   return (
     <div className={`host-line ${line.kind} in-${scene}`} role="status" aria-label={`The director: ${line.text}`}>
@@ -124,9 +123,6 @@ export default function DirectorHost({ scene, reduced, reactions, idleHold, soun
           )}
           <button role="menuitem" onClick={pick(onSelectScene)}>
             Select scene…
-          </button>
-          <button role="menuitem" onClick={pick(() => host.setVoiceMuted(!host.voiceMuted))}>
-            Director&apos;s voice: {host.voiceMuted ? "off" : "on"}
           </button>
           <button role="menuitem" onClick={pick(onToggleSound)}>
             Sound: {soundMuted ? "off" : "on"}

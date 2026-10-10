@@ -34,7 +34,7 @@ The rules that hold for every scene:
 - **Reduced motion is respected** everywhere: flicker, sweeps, shatter, fake cursor and credits roll are replaced by plain crossfades or still frames.
 - **It works on phones.** The letterboxed cards, the Director's top bar and the poster all re-lay out for narrow screens.
 
-Around the acts: a corner **mute**, a **Director on/off** chip for the director's voice, and **Select scene** (jump to any act or the credits). Your progress is saved, so a **refresh resumes the same scene**, while a new visit always starts at the opening (your name is kept).
+Around the acts: a corner **mute**, and **Select scene** (jump to any act or the credits). Your progress is saved, so a **refresh resumes the same scene**, while a new visit always starts at the opening (your name is kept).
 
 ---
 
@@ -112,14 +112,13 @@ A slow roll over the same dark synthwave floor: **Starring** your name, then Act
 
 Every line comes from one character: an arrogant, washed-up film director whose last good movie was in 1994.
 
-- **Roasts.** After every Recall answer and every direction you give, he fires one short line that **quotes you**: "A 'dragon eating a sandwich'? Did you even look at the screen?" It appears as a typewriter subtitle ("THE DIRECTOR") and is **spoken aloud** with the deepest English voice your browser has (low pitch, slow rate). The line comes from `/api/roast`, which has a cache, a rate limit and a Zod check, requires the line to quote a real word you said, and rejects anything about looks, body, voice, age or identity. If the model fails, over 80 built-in roasts take over. "Freeze", "cut" and silences never call a model at all.
+- **Roasts.** After every Recall answer and every direction you give, he fires one short line that **quotes you**: "A 'dragon eating a sandwich'? Did you even look at the screen?" It appears as a typewriter subtitle ("THE DIRECTOR") and is **never spoken: the film has sound effects and music, but no voice**. The line comes from `/api/roast`, which has a cache, a rate limit and a Zod check, requires the line to quote a real word you said, and rejects anything about looks, body, voice, age or identity. If the model fails, over 80 built-in roasts take over. "Freeze", "cut" and silences never call a model at all.
 - **Interruptions.** Between Recall rounds he cuts in: *"Interruption. Round 2. Try not to embarrass yourself."*
 - **Quiet time.** He says nothing in the opening, in Act III, or during Recall's countdown, flash and 30-second describe phases.
 - **Fourth-wall reactions** (all local, all rate limited): coming back from another tab ("Where did you go? The scene is still running."), 20 seconds of idleness ("Hello? Is the talent asleep?"), the time of day (once a visit), resizing the window ("Stop touching the set."), moving the mouse towards the top-left corner ("Leaving already? Coward."), and copying text ("Stealing evidence?").
 - **Right-click** opens a film-style action menu (Retake this act, Select scene, the director's voice, sound), except in text fields and on touch screens, where the browser's own menu stays.
 - **For anyone who opens dev tools:** there's a detective's note in the console.
 
-The voice has its own **Director on/off** chip and is also silenced by the main mute. The subtitles stay either way.
 
 ---
 

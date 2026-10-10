@@ -1,10 +1,7 @@
 "use client";
 
-import { isMuted, onMuteChange } from "@/lib/sound";
-import { deepestVoice } from "./voice";
-
-// The director's one voice. A single queue shows one line at a time (typewriter subtitle) and speaks
-// it with speech synthesis. Nothing here touches gameplay: when the game needs quiet (timed Recall
+// The director's one voice, in text only (no speech synthesis, no robotic voice). A single queue shows
+// one line at a time as a typewriter subtitle. Nothing here touches gameplay: when the game needs quiet (timed Recall
 // phases, the opening, Act III) the film sets `quiet` and every line is dropped.
 
 export type LineKind = "roast" | "interrupt" | "react";
@@ -19,7 +16,6 @@ interface Queued {
   expires: number; // a roast that arrives this late is dropped
 }
 
-const VOICE_KEY = "swys-director-voice";
 const MAX_QUEUE = 3;
 const LATE_ROAST_MS = 10_000;
 const STALE_REACTION_MS = 12_000;
@@ -29,32 +25,11 @@ const RANK: Record<LineKind, number> = { react: 1, roast: 2, interrupt: 3 };
 class Host {
   version = 0;
   line: HostLine | null = null;
-  speaking = false;
   quiet = true;
-  voiceMuted = false;
 
   private queue: Queued[] = [];
   private listeners = new Set<() => void>();
   private seq = 0;
-  private voice: SpeechSynthesisVoice | null = null;
-  private failSafe: ReturnType<typeof setTimeout> | null = null;
-
-  constructor() {
-    if (typeof window === "undefined") return;
-    try {
-      this.voiceMuted = localStorage.getItem(VOICE_KEY) === "0";
-    } catch {
-      // Storage blocked: the voice just defaults to on.
-    }
-    const ss = window.speechSynthesis;
-    if (ss) {
-      const load = () => (this.voice = deepestVoice(ss.getVoices()));
-      load();
-      ss.addEventListener?.("voiceschanged", load);
-    }
-    // Muting all sound also silences the director's voice (the subtitle stays).
-    onMuteChange((m) => m && this.stopSpeech());
-  }
 
   subscribe = (fn: () => void) => {
     this.listeners.add(fn);
@@ -79,7 +54,6 @@ class Host {
     // Chatter on screen gives way to the game's own lines (and queued chatter is dropped).
     if (RANK[kind] > RANK[this.line.kind] && this.line.kind === "react") {
       this.queue = this.queue.filter((q) => q.kind !== "react");
-      this.stopSpeech(false);
       return this.show(item);
     }
     // Newer reactions replace queued reactions; the queue stays short.
@@ -95,7 +69,6 @@ class Host {
   // The current line has been read and held long enough: move on.
   next(id: number) {
     if (!this.line || this.line.id !== id) return;
-    this.stopSpeech();
     let item = this.queue.shift();
     while (item && item.expires < Date.now()) item = this.queue.shift();
     if (item) this.show(item);
@@ -109,7 +82,6 @@ class Host {
   silence() {
     this.queue = [];
     this.line = null;
-    this.stopSpeech();
     this.emit();
   }
 
@@ -119,60 +91,9 @@ class Host {
     if (quiet) this.silence();
   }
 
-  setVoiceMuted(muted: boolean) {
-    this.voiceMuted = muted;
-    try {
-      localStorage.setItem(VOICE_KEY, muted ? "0" : "1");
-    } catch {}
-    if (muted) this.stopSpeech();
-    this.emit();
-  }
-
   private show(item: Queued) {
     this.line = { id: ++this.seq, text: item.text, kind: item.kind };
-    this.speak(item.text);
     this.emit();
-  }
-
-  private speak(text: string) {
-    this.stopSpeech(false);
-    const ss = typeof window !== "undefined" ? window.speechSynthesis : undefined;
-    if (!ss || this.voiceMuted || isMuted()) return;
-    try {
-      const u = new SpeechSynthesisUtterance(text.replace(/[“”]/g, ""));
-      if (this.voice) u.voice = this.voice;
-      u.lang = this.voice?.lang ?? "en-US";
-      u.pitch = 0.35; // low
-      u.rate = 0.88; // slow, theatrical
-      u.volume = 1;
-      const done = () => {
-        if (this.failSafe) clearTimeout(this.failSafe);
-        if (this.speaking) {
-          this.speaking = false;
-          this.emit();
-        }
-      };
-      u.onend = done;
-      u.onerror = done;
-      this.speaking = true;
-      // Some browsers never fire onend (hidden tab, voice failure): don't wait forever.
-      this.failSafe = setTimeout(done, 1500 + text.length * 95);
-      ss.cancel();
-      ss.speak(u);
-    } catch {
-      this.speaking = false;
-    }
-  }
-
-  private stopSpeech(notify = true) {
-    if (this.failSafe) clearTimeout(this.failSafe);
-    try {
-      window.speechSynthesis?.cancel();
-    } catch {}
-    if (this.speaking) {
-      this.speaking = false;
-      if (notify) this.emit();
-    }
   }
 }
 

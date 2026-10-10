@@ -82,6 +82,10 @@ export interface DirectorWrap {
   demo: boolean;
 }
 
+// How long Act II waits for a camera permission answer before it falls back to the demo subject.
+const CAMERA_WAIT_MS = 8000;
+type Giveup = (() => void) | null;
+
 export default function DirectorStage({
   film,
 }: { film?: { onWrap: (w: DirectorWrap) => void; onLine?: (l: { text: string; kind: "direction" | "shot" | "undo" }) => void } } = {}) {
@@ -101,6 +105,8 @@ export default function DirectorStage({
   const [credit, setCredit] = useState<Credit | null>(null);
 
   // Mutable engine state lives in refs so the render loop never waits on React.
+  const booting = useRef(false);
+  const giveUp = useRef<Giveup>(null); // lets "Use demo subject" cut a pending camera prompt short
   const eng = useRef({
     settings: DEFAULT_SETTINGS as ShotSettings,
     history: [] as ShotSettings[],
@@ -195,26 +201,62 @@ export default function DirectorStage({
   // ---------- Start the camera (or the demo subject) and the render loop ----------
   const start = useCallback(
     async (wantCamera: boolean) => {
+      if (booting.current) return; // a second click while the first is still starting
+      booting.current = true;
       setPhase("starting");
       const e = eng.current;
       const video = videoRef.current!;
       let useCamera = wantCamera;
       if (wantCamera) {
+        // The permission prompt can sit there forever (ignored, dismissed, or a locked-down browser),
+        // so nothing here may wait unbounded: after CAMERA_WAIT_MS we direct the demo subject instead.
+        let timedOut = false;
+        let skipped = false;
+        let timer: ReturnType<typeof setTimeout> | undefined;
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({
+          if (!navigator.mediaDevices?.getUserMedia) throw new DOMException("No camera API", "NotFoundError");
+          const asking = navigator.mediaDevices.getUserMedia({
             video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
             audio: false,
           });
-          video.srcObject = stream;
-          await video.play();
+          const answer = await Promise.race([
+            asking,
+            new Promise<null>((resolve) => {
+              timer = setTimeout(() => {
+                timedOut = true;
+                resolve(null);
+              }, CAMERA_WAIT_MS);
+              giveUp.current = () => {
+                skipped = true;
+                resolve(null);
+              };
+            }),
+          ]);
+          if (!answer) {
+            // Answered too late: release the camera if it ever arrives.
+            asking.then((late) => late.getTracks().forEach((tr) => tr.stop())).catch(() => {});
+            throw new DOMException("Camera prompt not answered", "TimeoutError");
+          }
+          video.srcObject = answer;
+          await Promise.race([video.play(), new Promise((_, reject) => setTimeout(() => reject(new DOMException("Camera didn't start", "TimeoutError")), 4000))]);
         } catch (err) {
           const name = (err as DOMException)?.name;
           setNotice(
-            name === "NotAllowedError"
+            skipped
+              ? "No camera, no problem: you're directing the demo subject."
+              : name === "NotAllowedError"
               ? "Camera permission was denied, so you're directing the demo subject. Allow the camera in your browser to step in yourself."
-              : "No camera found, so you're directing the demo subject."
+              : timedOut || name === "TimeoutError"
+                ? "The camera didn't answer in time, so you're directing the demo subject. Reload to try the camera again."
+                : "No camera found, so you're directing the demo subject."
           );
+          const held = video.srcObject as MediaStream | null;
+          held?.getTracks().forEach((tr) => tr.stop());
+          video.srcObject = null;
           useCamera = false;
+        } finally {
+          clearTimeout(timer);
+          giveUp.current = null;
         }
       }
       e.demo = !useCamera;
@@ -225,6 +267,7 @@ export default function DirectorStage({
         renderer = new DirectorRenderer(canvasRef.current!);
       } catch (err) {
         setNotice(`This browser can't run Director mode: ${(err as Error).message}`);
+        booting.current = false;
         setPhase("intro");
         return;
       }
@@ -502,7 +545,7 @@ export default function DirectorStage({
             </p>
             {notice && <p className="intro-notice">{notice}</p>}
             <div className="row-end centered">
-              <button className="ghost" onClick={() => start(false)} disabled={phase === "starting"}>
+              <button className="ghost" onClick={() => (giveUp.current ? giveUp.current() : start(false))}>
                 Use demo subject
               </button>
               <button className="primary" onClick={() => start(true)} disabled={phase === "starting"}>
@@ -541,7 +584,7 @@ export default function DirectorStage({
 
           {(status || source === "demo" || notice) && (
             <div className="dir-status">
-              {status || (source === "demo" ? "Demo subject: allow your camera to step into the shot yourself." : notice)}
+              {status || notice || (source === "demo" ? "Demo subject: allow your camera to step into the shot yourself." : "")}
               {source === "demo" && (
                 <button className="dir-link" onClick={() => window.location.reload()}>
                   Try camera
