@@ -1,7 +1,8 @@
 import "server-only";
-import { ProviderSession, type Message } from "./providers";
+import { FAST_CHAIN, ProviderSession, type Message } from "./providers";
+import { recallSystemPrompt } from "./recallPrompt";
 import { buildOfflineScene, guessBackdrop } from "./offline";
-import { BACKGROUNDS } from "./scene";
+import { BACKGROUNDS, PARTICLES } from "./scene";
 import { z } from "zod";
 import { ART_NAMES } from "./art";
 import { ICON_NAMES } from "./icons";
@@ -12,7 +13,7 @@ import type { Scene } from "./scene";
 
 const MAX_ATTEMPTS = 3;
 // Without an explicit cap OpenRouter reserves the model's full output limit, which needs far more credits.
-const MAX_TOKENS: Record<"recall" | "studio", number> = { recall: 3000, studio: 6000 };
+const MAX_TOKENS: Record<"recall" | "studio", number> = { recall: 1500, studio: 6000 };
 
 export type GenerateMode = "recall" | "studio";
 
@@ -107,8 +108,69 @@ Return the corrected full JSON only.` }
 
 export type Engine = string; // provider name, or "offline"
 
+// Shapes the renderer doesn't have map to the nearest one (the offline builder does the same: triangle -> star).
+const SHAPE_FIX: Record<string, string> = {
+  square: "rect", rectangle: "rect", box: "rect", block: "rect", cube: "rect",
+  oval: "circle", ellipse: "circle", dot: "circle", ball: "circle", sphere: "circle", disc: "circle",
+  triangle: "star", diamond: "star", polygon: "star", pentagon: "star", hexagon: "star", heart: "star",
+  line: "arrow", pointer: "arrow", label: "text",
+};
+const OBJECT_TYPES = new Set(["circle", "rect", "star", "text", "arrow", "image", "icon", "art"]);
+
+// Fill in and fix the small things a fast model gets slightly wrong, so a good scene isn't thrown away
+// (and a second provider isn't called for it).
+function tidyRecallJson(json: unknown): unknown {
+  const root = json as { scenes?: unknown };
+  const first = Array.isArray(root?.scenes) ? root.scenes[0] : (json as { objects?: unknown })?.objects ? json : null;
+  if (!first || typeof first !== "object") return json;
+  const sc: Record<string, unknown> = { id: "s1", title: "Scene", duration: 5, timeline: [], ...(first as Record<string, unknown>) };
+  if (!(PARTICLES as readonly string[]).includes(sc.particles as string)) delete sc.particles;
+  if (Array.isArray(sc.objects)) {
+    sc.objects = sc.objects
+      .filter((o) => o && typeof o === "object")
+      .map((o) => {
+        const obj = { ...(o as Record<string, unknown>) };
+        const type = String(obj.type ?? "").toLowerCase();
+        if (OBJECT_TYPES.has(type)) obj.type = type;
+        else if (SHAPE_FIX[type]) obj.type = SHAPE_FIX[type];
+        else if (typeof obj.icon === "string") obj.type = "icon";
+        else {
+          // An unknown thing named by its type ("dog"): treat the type as an icon name; snapping fixes it.
+          obj.icon = type || "star";
+          obj.type = "icon";
+        }
+        return obj;
+      });
+  }
+  return { scenes: [sc] };
+}
+
+// Recall's fast path: the short prompt, the fastest models, a timeout on each, and the local keyword
+// builder if both miss. It always returns, in about a second when the models are healthy.
+async function generateRecall(description: string): Promise<{ scenes: Scene[]; engine: Engine; note?: string }> {
+  const messages: Message[] = [
+    { role: "system", content: recallSystemPrompt(ICON_NAMES) },
+    { role: "user", content: description },
+  ];
+  const misses: string[] = [];
+  for (const provider of FAST_CHAIN) {
+    if (!provider.available()) continue;
+    try {
+      const reply = await provider.call(messages, MAX_TOKENS.recall);
+      const scenes = acceptScenes(tidyRecallJson(extractJson(reply)), "recall", description);
+      return { scenes, engine: provider.name };
+    } catch (err) {
+      misses.push(`${provider.name}: ${(err as Error).message.slice(0, 120)}`);
+      console.warn(`Recall: ${provider.name} missed, trying the next one:`, (err as Error).message.replace(/\s+/g, " ").slice(0, 220));
+    }
+  }
+  console.warn("Recall AI missed, using the local keyword builder:", misses.join(" | ") || "no provider configured");
+  return { scenes: [buildOfflineScene(description, "recall")], engine: "offline", note: misses.join(" | ").slice(0, 200) };
+}
+
 // Ask the AI chain for scenes; if every provider fails, build the scene offline instead.
 export async function generateScenes(description: string, mode: GenerateMode): Promise<{ scenes: Scene[]; engine: Engine; note?: string }> {
+  if (mode === "recall") return generateRecall(description);
   const session = new ProviderSession();
   try {
     const scenes = await askAI(description, mode, session);
@@ -126,22 +188,25 @@ async function askAI(description: string, mode: GenerateMode, session: ProviderS
 ${MODE_RULES[mode]}` },
     { role: "user", content: description },
   ];
-  return askWithRetries(messages, MAX_TOKENS[mode], (json) => {
-    const parsed = scenesResponse.safeParse(json);
-    if (!parsed.success) throw new Error(z.prettifyError(parsed.error));
-    // Unknown icon names snap to the closest whitelisted icon rather than costing a retry.
-    const scenes = (parsed.data.scenes as Scene[]).map((sc) => snapIcons(sc).scene);
-    const problems = scenes.flatMap(checkScene);
-    if (problems.length) throw new Error(problems.join("; "));
-    // Studio scenes always get a fitting backdrop preset, even if the model chose a flat colour.
-    const dressed =
-      mode === "studio"
-        ? scenes.map((sc) =>
-            (BACKGROUNDS as readonly string[]).includes(sc.background ?? "")
-              ? sc
-              : { ...sc, background: guessBackdrop(`${description} ${sc.title} ${sc.caption ?? ""}`) ?? "sky" }
-          )
-        : scenes;
-    return dressed.map(clampToStage);
-  }, session);
+  return askWithRetries(messages, MAX_TOKENS[mode], (json) => acceptScenes(json, mode, description), session);
+}
+
+// Validate a model reply and make it safe to play: schema, snapped icons, references, on-stage.
+function acceptScenes(json: unknown, mode: GenerateMode, description: string): Scene[] {
+  const parsed = scenesResponse.safeParse(json);
+  if (!parsed.success) throw new Error(z.prettifyError(parsed.error));
+  // Unknown icon names snap to the closest whitelisted icon rather than costing a retry.
+  const scenes = (parsed.data.scenes as Scene[]).map((sc) => snapIcons(sc).scene);
+  const problems = scenes.flatMap(checkScene);
+  if (problems.length) throw new Error(problems.join("; "));
+  // Studio scenes always get a fitting backdrop preset, even if the model chose a flat colour.
+  const dressed =
+    mode === "studio"
+      ? scenes.map((sc) =>
+          (BACKGROUNDS as readonly string[]).includes(sc.background ?? "")
+            ? sc
+            : { ...sc, background: guessBackdrop(`${description} ${sc.title} ${sc.caption ?? ""}`) ?? "sky" }
+        )
+      : scenes;
+  return dressed.map(clampToStage);
 }

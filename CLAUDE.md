@@ -95,17 +95,20 @@ One object; the model only ever returns a patch; everything is clamped.
 
 ## AI providers (lib/providers.ts)
 Chain, first that answers wins (sticky per request): OpenRouter (`OPENROUTER_MODEL`, default `google/gemini-2.5-flash`; on 402 "can only afford N" it retries with fewer tokens) -> Google Gemini direct via OpenAI-compatible endpoint (models `gemini-flash-latest` then `gemini-flash-lite-latest`; pinned `gemini-2.5-flash` is NOT available to new keys) -> OpenRouter `:free` models (picked live from the model list) -> offline engines (no AI). Results from the offline path show an OFFLINE BUILD badge (Recall/Studio) or "Offline director" note.
+**Recall's fast path** (`lib/generate.ts` `generateRecall`, `FAST_CHAIN` in providers.ts, prompt in `lib/recallPrompt.ts`): short prompt (no art/camera/Studio rules, same output shape, so validation and scoring are untouched), OpenRouter `google/gemini-2.5-flash-lite` (`OPENROUTER_FAST_MODEL`, 10s timeout) -> Gemini `gemini-flash-lite-latest` (`GEMINI_FAST_MODEL`, 6s timeout) -> local keyword builder (`buildOfflineScene`), plus an 18s hard deadline in `/api/generate` and a 10-min cache. One attempt per provider; a lenient `tidyRecallJson` maps odd shapes (triangle -> star), drops bad particles, fills defaults. Measured: ~1.4-1.9s per scene (was 6-23s because the default `gemini-2.5-flash` fails with 402 low credits and fell through to the thinking model `gemini-flash-latest`, which takes 6-19s). Do NOT use `gemini-flash-latest` or other thinking models on this path. Studio still uses the long prompt and the old chain.
 
 ## Environment variables (never commit values)
 `.env.local` locally and Vercel Project -> Settings -> Environment Variables:
 - `OPENROUTER_API_KEY` (alias accepted: `api_openrouter_API_key`)
-- `OPENROUTER_MODEL` (optional)
+- `OPENROUTER_MODEL` (optional; Studio and other long generations)
+- `OPENROUTER_FAST_MODEL` (optional; Recall, default `google/gemini-2.5-flash-lite`)
 - `GEMINI_API_KEY` (or `GOOGLE_API_KEY`)
-- `GEMINI_MODEL` (optional)
+- `GEMINI_MODEL` (optional; Studio)
+- `GEMINI_FAST_MODEL` (optional; Recall, default `gemini-flash-lite-latest`)
 Both keys are set locally and on Vercel. OpenRouter credits are low; Gemini is the working backup. Groq was removed on purpose; don't re-add.
 
 ## Deploy / push
-- Commit to `main`, `git push`. The Vercel project is NOT git-linked: deploy with `vercel deploy --prod --yes` from the repo (team "aahhhh", project `say-what-you-saw`), then check `https://say-what-you-saw.vercel.app`.
+- Commit to `main`, `git push`. The Vercel project IS git-linked to https://github.com/adityabrabb/say-what-you-saw (`vercel git connect` reports "already connected"; git-triggered deployments carry a `say-what-you-saw-git-main-aahhhh.vercel.app` alias), so **a push to `main` deploys to production by itself**. Check with `vercel ls` and `https://say-what-you-saw.vercel.app`. A manual `vercel deploy --prod --yes` (team "aahhhh") is only a fallback if no git deployment appears.
 - Always run `npx next build` before committing; fix errors.
 - Commit messages end with the Co-Authored-By line from the system reminder.
 
@@ -119,7 +122,7 @@ Both keys are set locally and on Vercel. OpenRouter credits are low; Gemini is t
 - Headless/no-GPU tests run Director at ~35-60 fps; real browsers are faster. Only tested with a fake webcam so far; Adi's real webcam is the true test.
 - Windows dev: stopping `npm run dev` can orphan the Next process on port 3000; kill it by port before restarting. After changing a module's exports, restart the dev server (HMR serves stale modules).
 - `vercel deploy` once printed a stray `"status": "error"` line while the deployment was Ready.
-- Recall changes are limited to report-only hooks: `onFinish` (with `rounds`), `onRound(r, i, total)`, `onPhase(phase)`. Film consumes all three (Act III case file, roasts/interruptions, quiet time). Recall's own scoring (`/api/generate`) can take 10-25s on a slow model, so a round's roast and interruption only appear once its score is in.
+- Recall changes are limited to report-only hooks: `onFinish` (with `rounds`), `onRound(r, i, total)`, `onPhase(phase)`. Film consumes all three (Act III case file, roasts/interruptions, quiet time). A round's roast and interruption appear once its score is in (about 2s since the fast path; the wait shows "The director is reviewing the footage" with a film reel instead of a spinner, in `RecallGame.tsx` result screen + `.reel`/`.reviewing` CSS: the only visual change to Recall, requested by Adi).
 - The director's voice quality depends on the browser's installed voices; Chrome's Google voices ignore pitch.
 - Act III: if the AI director set a dark backdrop and no person is found, the frozen frame (and shards) is dark. That's real content, not a bug.
 

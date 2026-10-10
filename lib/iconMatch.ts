@@ -23,7 +23,7 @@ export const SYNONYMS: Record<string, string> = {
   sprout: "seedling", grass: "seedling", bush: "tree", oak: "tree", palm: "palm-tree", daisy: "flower", blossom: "cherry-blossom",
   automobile: "car", taxi: "car", truck: "bus", van: "bus", lorry: "bus", locomotive: "train", bike: "bicycle", plane: "airplane",
   jet: "airplane", aeroplane: "airplane", chopper: "helicopter", sailboat: "boat", yacht: "boat", canoe: "boat", ferry: "ship",
-  submarine: "ship", home: "house", building: "office", skyscraper: "office", tower: "office", palace: "castle", hut: "tent",
+  submarine: "ship", home: "house", city: "office", skyline: "office", downtown: "office", town: "house", village: "house", cottage: "house", cabin: "house", building: "office", skyscraper: "office", tower: "office", palace: "castle", hut: "tent",
   bulb: "lightbulb", "light-bulb": "lightbulb", idea: "lightbulb", lamp: "lightbulb", cog: "gear", wrench: "gear", tool: "hammer",
   padlock: "lock", present: "gift", prize: "trophy", cup: "trophy", diamond: "gem", jewel: "gem", cash: "money", dollar: "money",
   timer: "clock", watch: "clock", sandglass: "hourglass", books: "book", pen: "pencil", computer: "laptop", pc: "laptop",

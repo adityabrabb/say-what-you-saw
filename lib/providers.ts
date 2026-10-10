@@ -21,13 +21,14 @@ async function openAiCompatible(
   key: string,
   body: Record<string, unknown>,
   label: string,
-  extraHeaders: Record<string, string> = {}
+  extraHeaders: Record<string, string> = {},
+  timeoutMs = 45_000
 ): Promise<string> {
   const res = await fetch(url, {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", ...extraHeaders },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(45_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) throw Object.assign(new Error(`${label} ${res.status}: ${(await res.text()).slice(0, 240)}`), { status: res.status });
   const data = await res.json();
@@ -122,6 +123,63 @@ const openRouterFree: Provider = {
 };
 
 const CHAIN = [openRouter, gemini, openRouterFree];
+
+// ---------- Fast path (Recall's description -> scene step) ----------
+// Recall waits on this call while the player looks at their score, so it uses the fastest models and
+// a hard timeout on each: OpenRouter's Gemini Flash-Lite first (~1s), then Gemini direct's Flash-Lite
+// alias. A miss on both falls through to the local keyword builder (the caller's job), so it never
+// hangs. These are small, non-"thinking" models: the thinking ones take 6-20s for the same answer.
+export const FAST_OPENROUTER_TIMEOUT_MS = 10_000;
+export const FAST_GEMINI_TIMEOUT_MS = 6_000;
+
+export interface FastProvider {
+  name: string;
+  available: () => boolean;
+  call: (messages: Message[], maxTokens: number) => Promise<string>;
+}
+
+async function openRouterFastCall(messages: Message[], maxTokens: number): Promise<string> {
+  const body = (tokens: number) => ({
+    model: process.env.OPENROUTER_FAST_MODEL || "google/gemini-2.5-flash-lite",
+    messages,
+    temperature: 0.2,
+    max_tokens: tokens,
+    response_format: { type: "json_object" },
+  });
+  const url = "https://openrouter.ai/api/v1/chat/completions";
+  const headers = { "X-Title": "Say What You Saw" };
+  try {
+    return await openAiCompatible(url, openRouterKey()!, body(maxTokens), "OpenRouter", headers, FAST_OPENROUTER_TIMEOUT_MS);
+  } catch (err) {
+    // Low credit: OpenRouter says how many tokens are still affordable. Retry once within that.
+    const affordable = Number((err as Error).message.match(/can only afford (\d+)/)?.[1]);
+    if (affordable >= 500 && affordable < maxTokens) return openAiCompatible(url, openRouterKey()!, body(affordable - 50), "OpenRouter", headers, FAST_OPENROUTER_TIMEOUT_MS);
+    throw err;
+  }
+}
+
+export const FAST_CHAIN: FastProvider[] = [
+  { name: "openrouter-fast", available: () => !!openRouterKey(), call: openRouterFastCall },
+  {
+    name: "gemini-fast",
+    available: () => !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY),
+    call: (messages, maxTokens) =>
+      openAiCompatible(
+        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY)!,
+        {
+          model: process.env.GEMINI_FAST_MODEL || "gemini-flash-lite-latest",
+          messages,
+          temperature: 0.2,
+          max_tokens: maxTokens,
+          response_format: { type: "json_object" },
+        },
+        "Gemini",
+        {},
+        FAST_GEMINI_TIMEOUT_MS
+      ),
+  },
+];
 
 // One request's view of the chain: remembers which provider answered so retries reuse it.
 export class ProviderSession {

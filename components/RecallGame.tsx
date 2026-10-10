@@ -546,8 +546,19 @@ export default function RecallGame({
               {generated ? (
                 <SceneRenderer scene={generated} time={5} highlights={highlightsPlayer} />
               ) : (
-                <div className="stage-placeholder">
-                  {!said ? "Nothing to draw." : error ? "Couldn't build your scene." : <span className="spinner" />}
+                <div className={!said || error ? "stage-placeholder" : "stage-placeholder reviewing"} role={!said || error ? undefined : "status"}>
+                  {!said ? (
+                    "Nothing to draw."
+                  ) : error ? (
+                    "Couldn't build your scene."
+                  ) : (
+                    <>
+                      <span className="reel" aria-hidden />
+                      <span className="reviewing-text">
+                        The director is reviewing the footage<span className="dots" aria-hidden />
+                      </span>
+                    </>
+                  )}
                 </div>
               )}
               {score && score.extra.length > 0 && (
