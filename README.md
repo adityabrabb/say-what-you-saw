@@ -4,7 +4,9 @@
 
 **Play it: https://say-what-you-saw.vercel.app**
 
-**Watch the demo: https://www.youtube.com/watch?v=H2Rsgv2QPtY**
+**Demo video:** https://www.youtube.com/watch?v=H2Rsgv2QPtY
+
+**Build timelapse:** https://youtu.be/q9XUI_J4O8g
 
 > ## 🎙️ Built entirely by voice with Wispr Flow
 >
