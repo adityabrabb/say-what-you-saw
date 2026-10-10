@@ -1,27 +1,27 @@
 "use client";
 
-// The 25-second trailer, drawn on a 1280x720 canvas as a pure function of time: draw(g, t).
+// The 37.5-second trailer, drawn on a 1280x720 canvas as a pure function of time: draw(g, t).
 // Nothing here owns a clock, so it plays live, records to WebM and can be scrubbed in a test.
 // Look: film noir (near-black, aged paper, one blood-red accent, typewriter type, 2.39:1 letterbox, no grain).
 
 export const W = 1280;
 export const H = 720;
-export const DURATION = 25;
+export const DURATION = 37.5;
 const BAR = 92; // 2.39:1 letterbox: 1280 x 536 picture, 92px bars
 const PIC_H = H - BAR * 2;
 
 // The cut list (seconds). The audio score in score.ts is scheduled on exactly the same marks.
 export const CUTS = {
-  open: [0, 3.4],
-  target: [3.4, 5.0],
-  said: [5.0, 10.4],
-  title2: [10.4, 12.4],
-  slam: [12.4, 14.2],
-  takes: [14.2, 18.2],
-  montage: [18.2, 20.4],
-  poster: [20.4, 22.4],
-  silence: [22.4, 23.0],
-  final: [23.0, 25.0],
+  open: [0, 5.0],
+  target: [5.0, 7.4],
+  said: [7.4, 16.4],
+  title2: [16.4, 19.0],
+  slam: [19.0, 21.6],
+  takes: [21.6, 27.6],
+  montage: [27.6, 31.6],
+  poster: [31.6, 34.6],
+  silence: [34.6, 35.2],
+  final: [35.2, 37.5],
 } as const;
 export const BEAT = 0.4; // the montage cuts on this beat
 
@@ -179,7 +179,7 @@ function coverDraw(g: CanvasRenderingContext2D, img: CanvasImageSource, zoom: nu
 
 function sceneOpen(g: CanvasRenderingContext2D, s: TrailerSession, f: TrailerFonts, t: number) {
   // A thin projector cone settles from the top while the first line lights.
-  const cone = ramp(t, 0.1, 1.4) * (1 - ramp(t, 3.0, 3.4));
+  const cone = ramp(t, 0.1, 1.6) * (1 - ramp(t, 4.6, 5.0));
   const grad = g.createLinearGradient(0, BAR, 0, H - BAR);
   grad.addColorStop(0, `rgba(232,223,204,${0.12 * cone})`);
   grad.addColorStop(1, "rgba(232,223,204,0)");
@@ -190,7 +190,7 @@ function sceneOpen(g: CanvasRenderingContext2D, s: TrailerSession, f: TrailerFon
   g.lineTo(W / 2 + 420, H - BAR);
   g.lineTo(W / 2 - 420, H - BAR);
   g.fill();
-  titleLine(g, f, s.lines[0], t, 0.7, 1.5, 2.9, 3.35);
+  titleLine(g, f, s.lines[0], t, 1.0, 2.0, 4.4, 4.95);
   dust(g, t, 0.4 * cone);
 }
 
@@ -281,7 +281,7 @@ function sceneSaid(g: CanvasRenderingContext2D, s: TrailerSession, f: TrailerFon
 
 function sceneTitle2(g: CanvasRenderingContext2D, s: TrailerSession, f: TrailerFonts, t: number) {
   const [a] = CUTS.title2;
-  titleLine(g, f, s.lines[1], t, a + 0.15, a + 0.6, a + 1.7, a + 2.0);
+  titleLine(g, f, s.lines[1], t, a + 0.15, a + 0.6, a + 2.3, a + 2.6);
   dust(g, t, 0.3);
 }
 

@@ -1,6 +1,6 @@
 import type { TrailerRequest } from "./schema";
 
-export const TRAILER_SYSTEM = `You write the four title cards of a 25-second movie trailer for a short film about a person's own session.
+export const TRAILER_SYSTEM = `You write the four title cards of a 37.5-second movie trailer for a short film about a person's own session.
 Style: the deep-voiced "In a world..." trailer narrator, funny, dry, a little arrogant, PG-13.
 
 You get the star's name, what they said when asked to remember scenes, the lines they used to direct their own scene,

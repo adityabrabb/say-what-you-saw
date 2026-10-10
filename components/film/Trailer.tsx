@@ -9,7 +9,7 @@ import { DURATION, H, W, drawTrailer, readFonts, setCalm, type TrailerAssets, ty
 import type { TrailerRequest } from "@/lib/trailer/schema";
 import { startScore, type TrailerAudio } from "@/lib/trailer/score";
 
-// "Watch your trailer": a 25-second trailer auto-edited from the session, drawn on a 1280x720 canvas
+// "Watch your trailer": a 37.5-second trailer auto-edited from the session, drawn on a 1280x720 canvas
 // with a generated score. It is recorded to a downloadable file where the browser can (play-only
 // otherwise). Nothing in here may break the credits: it is lazy, caught, and always has a way back.
 

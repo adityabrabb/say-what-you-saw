@@ -118,27 +118,27 @@ export function startScore(muted: boolean): TrailerAudio | null {
     osc("sine", 55, 80, from, d, vol * 0.9, d * 0.9);
   };
 
-  // A. 0 - 3.4: a held sub tone and a riser into the first braam
+  // A. 0 - 5.0: a held sub tone and a riser into the first braam
   riser(0.1, CUTS.target[0], 0.1);
   braam(CUTS.target[0], 0.24);
-  // C. 5.0 - 10.4: a clock and a slow pulse under the testimony
+  // C. 7.4 - 16.4: a clock and a slow pulse under the testimony
   for (let s = CUTS.said[0]; s < CUTS.said[1] - 0.1; s += 0.6) tick(s, 0.07);
   for (let s = CUTS.said[0]; s < CUTS.said[1] - 0.3; s += 1.2) osc("sine", 52, 44, s, 0.7, 0.14, 0.04);
-  // D. 10.4 - 12.4: second riser, then the score slams in
+  // D. 16.4 - 19.0: second riser, then the score slams in
   riser(CUTS.title2[0] + 0.2, CUTS.slam[0], 0.12);
   braam(CUTS.slam[0], 0.3, 2.2);
   kick(CUTS.slam[0], 0.6);
-  // F. 14.2 - 18.2: a pulse that builds under the takes
+  // F. 21.6 - 27.6: a pulse that builds under the takes
   for (let s = CUTS.takes[0], i = 0; s < CUTS.takes[1] - 0.05; s += 0.5, i++) {
     kick(s, 0.22 + i * 0.03);
     if (i % 2) hat(s + 0.25, 0.04);
   }
-  // G. 18.2 - 20.4: kicks on the beat with the hats, cut for cut
+  // G. 27.6 - 31.6: kicks on the beat with the hats, cut for cut
   for (let s = CUTS.montage[0]; s < CUTS.montage[1] - 0.02; s += BEAT) {
     kick(s, 0.5);
     hat(s + BEAT / 2, 0.08);
   }
-  // H. 20.4 - 22.4: sub drop, then the stamp hits
+  // H. 31.6 - 34.6: sub drop, then the stamp hits
   osc("sine", 96, 24, CUTS.poster[0], 1.6, 0.4, 0.02);
   riser(CUTS.poster[0], CUTS.poster[0] + 0.6, 0.06);
   const hit = CUTS.poster[0] + 0.6;

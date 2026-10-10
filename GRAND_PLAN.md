@@ -214,3 +214,4 @@ The twist. It replaces the photo-strip popup after the fourth shot when Director
   - **Share:** `app/layout.tsx` metadata (metadataBase, OG and Twitter `summary_large_image`, theme colour), `public/og.png` 1200x630 captured from the production title card, `app/icon.svg` redrawn in noir (cream reel, blood-red centre).
   - **Hardening:** `/api/direct` no longer 500s on null or junk `settings` (falls back to defaults).
   - **Production check:** `/api/generate` answered with `gemini-fast` in 2.8s; OpenRouter and Gemini keys both return 200 (checked with the local copies, status only). Rate limit verified on `/api/direct` (12/min, then 429).
+- **Trailer lengthened (Oct 10, 2026):** 25s -> 37.5s (+50%) by giving each cut more room (cut list in `lib/trailer/render.ts`; score marks follow `CUTS`): opener 5.0s, target 2.4, testimony 9.0 (3 quotes at 3s each), title 2.6, score slam 2.6, takes 6.0, montage 4.0 (10 beats), poster 3.0, silence 0.6, title 2.3.

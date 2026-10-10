@@ -22,7 +22,7 @@ Say What You Saw is a film that plays in your browser, and you're the lead. A wa
 2. **You direct yourself.** Your webcam is cut out of your room and relit live. You say where you are and how it should look, and the shot changes.
 3. **You were never the witness.** In the last act the film freezes, the fourth wall breaks, and you get a **wanted poster** with your own words as evidence. You were the suspect all along.
 
-Then credits, a downloadable photo strip, and a 25-second **trailer** auto-edited from your session.
+Then credits, a downloadable photo strip, and a 37-second **trailer** auto-edited from your session.
 
 The look is film noir: an evidence file, near-black charcoal, aged paper, typewriter type and one blood-red accent. The tone is funny and roasty, and the roasts only ever target **what you said**, never your face, body, age or identity.
 
@@ -141,7 +141,7 @@ The charge sheet comes from `/api/verdict`, which receives **text only**. Each e
 
 Credits roll your name, scores, best line, every direction as a numbered scene, the photo strip, your alias and crime, the crew and the photo credits. You can download the strip, share or download a credits card (a 4:5 image with your title, scores and poster), play again, or **watch your trailer**.
 
-**The trailer** is 25 seconds, auto-edited from your session on a 1280×720 canvas in a 2.39:1 letterbox:
+**The trailer** is 37 seconds, auto-edited from your session on a 1280×720 canvas in a 2.39:1 letterbox:
 
 - an opening line on black, a flash of a Recall target and your own dictated sentences as typed quotes,
 - the score slamming in, your four takes with Ken Burns moves, the director's lines cut on the beat,
@@ -280,7 +280,7 @@ How it worked:
 - **Phase 2, The Director:** one roasting character across the whole film, with interruptions.
 - **Noir restyle:** the whole film moved from arcade neon to an evidence file.
 - **Phase 3, The Spectacle:** the three.js projector-beam opening, the fake Act 2.5 and the ad break.
-- **Phase 4, The Trailer:** a 25-second auto-edited trailer with a generated score and a downloadable recording.
+- **Phase 4, The Trailer:** a 37-second auto-edited trailer with a generated score and a downloadable recording.
 - **Phase 5, The Most Wanted wall:** skipped on purpose (no database).
 - **Phase 6, Polish and ship:** performance (lazy three.js, a shader that drops to a lite path below 30 fps), share metadata and an Open Graph still of the title card, a smoke test of the whole film, and a production check of both API keys and the rate limit.
 
